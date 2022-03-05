@@ -10,46 +10,7 @@
 
 #include "Shader.hpp"
 #include "Texture.hpp"
-
-void error_callback(int error, const char* description) {
-    std::cerr << "Error " << error << ": " << description << std::endl;
-}
-
-void GLAPIENTRY gl_debug_msg_cb(GLenum source, GLenum type, GLuint id, GLenum severity,
-                                GLsizei length, const GLchar* message, const void* param) {
-    std::cerr << "GL CALLBACK: " << (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "")
-              << "id = " << id << ", source = " << source << ", type = " << type << ", severity = " << severity
-              << "\n" << message << "\n" << std::endl;
-}
-
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    if (action == GLFW_PRESS) {
-        switch (key) {
-            case GLFW_KEY_E:
-                std::cout << "E pressed\n";
-                break;
-            case GLFW_KEY_ESCAPE:
-                glfwSetWindowShouldClose(window, true);
-                break;
-            default:
-                break;
-        }
-    }
-}
-
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
-    if (action == GLFW_PRESS) {
-        if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-            double x, y;
-            glfwGetCursorPos(window, &x, &y);
-            std::cout << "mouse press " << x << " , " << y << std::endl;
-        }
-    }
-}
-
-void window_size_callback(GLFWwindow* window, int width, int height) {
-    glViewport(0, 0, width, height);
-}
+#include "Window.hpp"
 
 struct Vertex {
     glm::vec2 pos;
@@ -57,25 +18,8 @@ struct Vertex {
 };
 
 int main() {
-    glfwSetErrorCallback(error_callback);
-    glfwInit();
-    glm::vec2 window_size = {1280, 720};
-    auto* window = glfwCreateWindow(window_size.x, window_size.y, "My Title", nullptr, nullptr);
-    glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
-    glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, true);
-    glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, true);
-    glfwSetKeyCallback(window, key_callback);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
-    glfwSetWindowSizeCallback(window, window_size_callback);
 
-    if (glewInit() != GLEW_OK) {
-        std::cerr << "Failed to initialize glew" << std::endl;
-        return -1;
-    }
-    std::cout << "OpenGL version " << glGetString(GL_VERSION) << std::endl;
-    glEnable(GL_DEBUG_OUTPUT);
-    glDebugMessageCallback(gl_debug_msg_cb, nullptr);
+    auto window = Window(1280, 720, "LDtkViewer");
 
     auto vert_src = GLSL(330 core,
          layout (location = 0) in vec2 i_position;
@@ -128,8 +72,8 @@ int main() {
     for (const auto& tile : tiles) {
         for (int i = 0; i < 4; ++i) {
             Vertex vert{};
-            vert.pos.x = tile.vertices[i].pos.x / window_size.x - level.size.x / (2.f * window_size.x);
-            vert.pos.y = -tile.vertices[i].pos.y / window_size.y + level.size.y / (2.f * window_size.y);
+            vert.pos.x = tile.vertices[i].pos.x / window.getSize().x - level.size.x / (2.f * window.getSize().x);
+            vert.pos.y = -tile.vertices[i].pos.y / window.getSize().y + level.size.y / (2.f * window.getSize().y);
             vert.tex.x = static_cast<float>(tile.vertices[i].tex.x) / texture.getSize().x;
             vert.tex.y = static_cast<float>(tile.vertices[i].tex.y) / texture.getSize().y;
             vertices.push_back(vert);
@@ -175,23 +119,41 @@ int main() {
 
     glm::vec4 color = {1.f, 1.f, 1.f, 1.f};
 
-    while (!glfwWindowShouldClose(window)) {
-        glClear(GL_COLOR_BUFFER_BIT);
+    while (window.isOpen()) {
+        auto mouse_pos = window.getMousePosition();
+
+        while (auto event = window.nextEvent()) {
+            if (auto key = event->as<Event::Key>()) {
+                if (key->action == GLFW_PRESS) {
+                    switch (key->key) {
+                        case GLFW_KEY_ESCAPE:
+                            window.close();
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            else if (auto btn = event->as<Event::MouseButton>()) {
+                if (btn->action == GLFW_PRESS) {
+                    if (btn->button == GLFW_MOUSE_BUTTON_LEFT) {
+                        std::cout << "mouse press " << mouse_pos.x << ", " << mouse_pos.y << std::endl;
+                    }
+                }
+            }
+        }
+
+        window.clear();
 
         texture.bind();
-        glBindVertexArray(vao);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-
         shader.bind();
 
+        glBindVertexArray(vao);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
         glDrawElements(GL_TRIANGLES, vertices.size() * 6, GL_UNSIGNED_INT, nullptr);
 
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+        window.display();
     }
 
-    glfwDestroyWindow(window);
-
-    glfwTerminate();
     return 0;
 }
