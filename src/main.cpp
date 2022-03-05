@@ -3,8 +3,13 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <LDtkLoader/World.hpp>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 #include "Shader.hpp"
+#include "Texture.hpp"
 
 void error_callback(int error, const char* description) {
     std::cerr << "Error " << error << ": " << description << std::endl;
@@ -42,17 +47,27 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     }
 }
 
+void window_size_callback(GLFWwindow* window, int width, int height) {
+    glViewport(0, 0, width, height);
+}
+
+struct Vertex {
+    glm::vec2 pos;
+    glm::vec2 tex;
+};
+
 int main() {
     glfwSetErrorCallback(error_callback);
     glfwInit();
-
-    auto* window = glfwCreateWindow(640, 480, "My Title", nullptr, nullptr);
+    glm::vec2 window_size = {1280, 720};
+    auto* window = glfwCreateWindow(window_size.x, window_size.y, "My Title", nullptr, nullptr);
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
     glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, true);
     glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, true);
     glfwSetKeyCallback(window, key_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetWindowSizeCallback(window, window_size_callback);
 
     if (glewInit() != GLEW_OK) {
         std::cerr << "Failed to initialize glew" << std::endl;
@@ -63,49 +78,95 @@ int main() {
     glDebugMessageCallback(gl_debug_msg_cb, nullptr);
 
     auto vert_src = GLSL(330 core,
-         layout(location = 0) in vec4 position;
-         void main() {
-             gl_Position = position;
+         layout (location = 0) in vec2 i_position;
+         layout (location = 1) in vec2 i_texcoord;
+
+         // uniform mat4 projection;
+
+         out vec2 tex_coords;
+
+         void main()
+         {
+             vec2 pos = i_position;
+             pos.x *= 8.;
+             pos.y *= 8.;
+             gl_Position = vec4(pos, 0.0, 1.0);
+             tex_coords = i_texcoord;
          }
     );
     auto frag_src = GLSL(330 core,
-         layout(location = 0) out vec4 color;
-         uniform vec4 u_color[4];
-         void main() {
-             color = u_color[2];
+         in vec2 tex_coords;
+         out vec4 FragColor;
+
+         uniform sampler2D texture0;
+
+         void main()
+         {
+             FragColor = texture(texture0, tex_coords);
          }
     );
     Shader shader;
     shader.load(vert_src, frag_src);
 
-    float positions[] = {
-            -0.5f,  0.5f,
-            0.5f,  0.5f,
-            0.5f, -0.5f,
-            -0.5f, -0.5f
-    };
+    Texture texture;
+    texture.load("../res/tileset.png");
 
-    unsigned int indices[] = {
-            0, 1, 2, 2, 3, 0
-    };
+    ldtk::World world;
+    try {
+        world.loadFromFile("../res/level.ldtk");
+    }
+    catch (const std::exception& exception) {
+        std::cerr << exception.what() << std::endl;
+        return -1;
+    }
+    const auto& level = world.getLevel("Level");
+    const auto& tiles = level.getLayer("Ground").allTiles();
+
+    float scale = 1.f;
+    std::vector<Vertex> vertices;
+    vertices.reserve(tiles.size());
+    for (const auto& tile : tiles) {
+        for (int i = 0; i < 4; ++i) {
+            Vertex vert{};
+            vert.pos.x = tile.vertices[i].pos.x / window_size.x - level.size.x / (2.f * window_size.x);
+            vert.pos.y = -tile.vertices[i].pos.y / window_size.y + level.size.y / (2.f * window_size.y);
+            vert.tex.x = static_cast<float>(tile.vertices[i].tex.x) / texture.getSize().x;
+            vert.tex.y = static_cast<float>(tile.vertices[i].tex.y) / texture.getSize().y;
+            vertices.push_back(vert);
+        }
+    }
+
+    std::vector<int> indices;
+    indices.resize(tiles.size() * 6, 0);
+    for (int i = 0; i < indices.size(); i += 6) {
+        int index_offset = (i / 6) * 4;
+        indices[i + 0] = index_offset;
+        indices[i + 1] = index_offset + 1;
+        indices[i + 2] = index_offset + 2;
+        indices[i + 3] = index_offset;
+        indices[i + 4] = index_offset + 2;
+        indices[i + 5] = index_offset + 3;
+    }
+
+    unsigned int vbo;
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), reinterpret_cast<float*>(vertices.data()), GL_STATIC_DRAW);
+
+    unsigned int ibo;
+    glGenBuffers(1, &ibo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(int), reinterpret_cast<int*>(indices.data()), GL_STATIC_DRAW);
 
     unsigned int vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
-    unsigned int buffer;
-    glGenBuffers(1, &buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(float), positions, GL_STATIC_DRAW);
-
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), nullptr);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
 
-    unsigned int ibo;
-    glGenBuffers(1, &ibo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(unsigned int), indices, GL_STATIC_DRAW);
-
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_TRUE, sizeof(Vertex), (void*)sizeof(glm::vec2));
 
     glBindVertexArray(0);
     glUseProgram(0);
@@ -117,16 +178,13 @@ int main() {
     while (!glfwWindowShouldClose(window)) {
         glClear(GL_COLOR_BUFFER_BIT);
 
-        shader.bind();
-        shader.setUniform("u_color", {color, color, color, color});
-        color.r -= 0.01f;
-        if (color.r < 0)
-            color.r = 1.0f;
-
+        texture.bind();
         glBindVertexArray(vao);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+        shader.bind();
+
+        glDrawElements(GL_TRIANGLES, vertices.size() * 6, GL_UNSIGNED_INT, nullptr);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
