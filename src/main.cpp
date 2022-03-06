@@ -1,3 +1,4 @@
+#include <array>
 #include <iostream>
 
 #include <GL/glew.h>
@@ -6,13 +7,14 @@
 #include <LDtkLoader/World.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "sogl/stb_image.h"
+
+#include "sogl/Shader.hpp"
+#include "sogl/Texture.hpp"
+#include "sogl/VertexArray.hpp"
+#include "sogl/Window.hpp"
 
 #include "Camera2D.hpp"
-#include "Shader.hpp"
-#include "Texture.hpp"
-#include "VertexArray.hpp"
-#include "Window.hpp"
 
 int main() {
     auto vert_src = GLSL(330 core,
@@ -61,23 +63,33 @@ int main() {
     shader.load(vert_src, frag_src);
 
     Texture texture;
-    texture.load("../res/tileset.png");
+    texture.load("../res/SunnyLand_by_Ansimuz-extended.png");
 
     ldtk::World world;
-    world.loadFromFile("../res/level.ldtk");
-    const auto& level = world.getLevel("Level");
-    const auto& tiles = level.getLayer("Ground").allTiles();
+    try {
+        world.loadFromFile("../res/gridvania.ldtk");
+    } catch(std::exception& ex) {
+        std::cout << ex.what() << std::endl;
+        return 0;
+    }
+    const auto& level = world.getLevel("Entrance");
 
-    VertexArray va;
-    va.reserve(tiles.size());
-    for (const auto& tile : tiles) {
-        for (int i = 0; i < 4; ++i) {
-            Vertex vert{};
-            vert.pos.x = tile.vertices[i].pos.x;
-            vert.pos.y = tile.vertices[i].pos.y;
-            vert.tex.x = static_cast<float>(tile.vertices[i].tex.x);
-            vert.tex.y = static_cast<float>(tile.vertices[i].tex.y);
-            va.push(vert);
+    std::vector<VertexArray> vertex_arrays;
+    vertex_arrays.reserve(level.allLayers().size());
+    for (const auto& layer : level.allLayers()) {
+        if (layer.allTiles().empty()) continue;
+        auto& va = vertex_arrays.emplace_back();
+        va.reserve(layer.allTiles().size() * 4);
+        for (const auto& tile : layer.allTiles()) {
+            auto tile_verts = tile.getVertices();
+            std::array<Vertex, 4> quad {};
+            for (int i = 0; i < 4; ++i) {
+                quad[i].pos.x = tile_verts[i].pos.x;
+                quad[i].pos.y = tile_verts[i].pos.y;
+                quad[i].tex.x = static_cast<float>(tile_verts[i].tex.x);
+                quad[i].tex.y = static_cast<float>(tile_verts[i].tex.y);
+            }
+            va.pushQuad(quad);
         }
     }
 
@@ -137,8 +149,11 @@ int main() {
 
         texture.bind();
 
-        va.bind();
-        va.render();
+        for (auto it = vertex_arrays.rbegin(); it != vertex_arrays.rend(); it++) {
+            auto& va = *it;
+            va.bind();
+            va.render();
+        }
 
         window.display();
     }

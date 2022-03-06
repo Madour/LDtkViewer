@@ -15,7 +15,7 @@ Texture::Texture() {
 }
 
 void Texture::load(const std::filesystem::path& file) {
-    auto* texture_data = stbi_load("../res/tileset.png", &m_size.x, &m_size.y, &m_chan_count, 0);
+    auto* texture_data = stbi_load(file.string().c_str(), &m_size.x, &m_size.y, &m_chan_count, 0);
 
     if (texture_data != nullptr) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_size.x, m_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data);

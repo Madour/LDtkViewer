@@ -53,7 +53,8 @@ Window::Window(int width, int height, const std::string& title) {
         if (glewInit() != GLEW_OK) {
             std::cerr << "Failed to initialize glew" << std::endl;
         }
-        glEnable(GL_DEPTH_TEST);
+        // glEnable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(gl_debug_msg_cb, nullptr);
         std::cout << "OpenGL version " << glGetString(GL_VERSION) << std::endl;
@@ -99,6 +100,10 @@ glm::vec<2, int> Window::getMousePosition() const {
 
 void Window::clear() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
 }
 
 void Window::display() {

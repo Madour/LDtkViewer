@@ -44,10 +44,10 @@ if(NOT glm_POPULATED)
     add_subdirectory(${glm_SOURCE_DIR} ${glm_BINARY_DIR})
 endif()
 
-find_package(LDtkLoader)
+find_package(LDtkLoader 0.10)
 
-file(GLOB_RECURSE SRC src/*.cpp )
-file(GLOB_RECURSE INC src/*.hpp )
+file(GLOB_RECURSE SRC src/*.cpp sogl/*.cpp)
+file(GLOB_RECURSE INC src/*.hpp sogl/*.hpp)
 
 if(MSVC)
     add_compile_options(
@@ -58,5 +58,6 @@ if(MSVC)
 endif()
 
 add_executable(LDtkViewer ${SRC} ${INC})
+target_include_directories(LDtkViewer PRIVATE src .)
 target_link_libraries(LDtkViewer PRIVATE libglew_static glfw glm LDtkLoader)
 set_target_properties(LDtkViewer PROPERTIES DEBUG_POSTFIX -d)
