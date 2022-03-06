@@ -13,7 +13,10 @@ public:
 
     void centerOn(float x, float y);
 
-    glm::vec3 getTransform();
+    glm::vec2 getCenter() const;
+    float getZoom() const;
+
+    glm::vec3 getTransform() const;
 
 private:
     glm::vec2 m_size;

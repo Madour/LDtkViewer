@@ -41,22 +41,31 @@ Window::Window(int width, int height, const std::string& title) {
         self->m_events.push_back(Event(Event::MouseButton{button, action, mods}));
     };
 
+    auto mouse_move_callback = [](GLFWwindow* window, double x, double y) {
+        self->m_events.push_back(Event(Event::MouseMove{static_cast<int>(x), static_cast<int>(y)}));
+    };
+
+    auto mouse_wheel_callback = [](GLFWwindow* window, double x, double y) {
+        self->m_events.push_back(Event(Event::Scroll{static_cast<int>(x), static_cast<int>(y)}));
+    };
+
     auto window_size_callback = [](GLFWwindow* window, int width, int height) {
         glViewport(0, 0, width, height);
     };
 
     glfwSetKeyCallback(m_window, key_callback);
     glfwSetMouseButtonCallback(m_window, mouse_button_callback);
+    glfwSetCursorPosCallback(m_window, mouse_move_callback);
+    glfwSetScrollCallback(m_window, mouse_wheel_callback);
     glfwSetWindowSizeCallback(m_window, window_size_callback);
 
     if (instance_count == 0) {
         if (glewInit() != GLEW_OK) {
             std::cerr << "Failed to initialize glew" << std::endl;
         }
-        // glEnable(GL_DEPTH_TEST);
         glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_DEBUG_OUTPUT);
-        glDebugMessageCallback(gl_debug_msg_cb, nullptr);
+        glEnable(GL_DEBUG_OUTPUT); glDebugMessageCallback(gl_debug_msg_cb, nullptr);
+        window_size_callback(m_window, m_size.x, m_size.y);
         std::cout << "OpenGL version " << glGetString(GL_VERSION) << std::endl;
     }
     instance_count += 1;

@@ -19,6 +19,14 @@ public:
         int action;
         int mods;
     };
+    struct MouseMove {
+        int x;
+        int y;
+    };
+    struct Scroll {
+        int dx;
+        int dy;
+    };
 
     Event() = default;
 
@@ -31,6 +39,6 @@ public:
     }
 
 private:
-    std::variant<Key, MouseButton> m_data;
+    std::variant<Key, MouseButton, MouseMove, Scroll> m_data;
     Event(decltype(m_data));
 };

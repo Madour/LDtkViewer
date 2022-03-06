@@ -5,6 +5,30 @@
 #include <GL/glew.h>
 
 VertexArray::VertexArray() {
+    create();
+}
+
+VertexArray::~VertexArray() {
+    glDeleteVertexArrays(1, &m_vao);
+    glDeleteBuffers(1, &m_ibo);
+    glDeleteBuffers(1, &m_vbo);
+}
+
+VertexArray::VertexArray(const VertexArray& other) : VertexArray() {
+    m_vertices = other.m_vertices;
+    m_indices = other.m_indices;
+    m_dirty = true;
+}
+
+VertexArray& VertexArray::operator=(const VertexArray& other) {
+    create();
+    m_vertices = other.m_vertices;
+    m_indices = other.m_indices;
+    m_dirty = true;
+    return *this;
+}
+
+void VertexArray::create() {
     glGenVertexArrays(1, &m_vao);
     glBindVertexArray(m_vao);
 
@@ -23,18 +47,12 @@ VertexArray::VertexArray() {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 0, nullptr, GL_STATIC_DRAW);
 }
 
-VertexArray::~VertexArray() {
-    glDeleteVertexArrays(1, &m_vao);
-    glDeleteBuffers(1, &m_ibo);
-    glDeleteBuffers(1, &m_vbo);
-}
-
 void VertexArray::reserve(std::size_t n) {
     m_vertices.reserve(n);
     m_indices.reserve((n / 4) * 6);
 }
 
-void VertexArray::copy(std::vector<Vertex>& other) {
+void VertexArray::copy(const std::vector<Vertex>& other) {
     m_vertices.clear();
     m_vertices.resize(other.size());
     for (std::size_t i = 0; i < other.size(); ++i) {
@@ -42,7 +60,7 @@ void VertexArray::copy(std::vector<Vertex>& other) {
     }
 
     m_indices.clear();
-    m_indices.resize(m_vertices.size() * 6);
+    m_indices.resize(m_vertices.size() / 4 * 6);
     for (int i = 0; i < m_indices.size(); i += 6) {
         int index_offset = (i / 6) * 4;
         m_indices[i + 0] = index_offset;

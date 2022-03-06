@@ -16,9 +16,11 @@ class VertexArray {
 public:
     VertexArray();
     ~VertexArray();
+    VertexArray(const VertexArray&);
+    VertexArray& operator=(const VertexArray&);
 
     void reserve(std::size_t n);
-    void copy(std::vector<Vertex>& other);
+    void copy(const std::vector<Vertex>& other);
 
     void pushTriangle(const std::array<Vertex, 3>& vertices);
     void pushQuad(const std::array<Vertex, 4>& vertices);
@@ -28,6 +30,8 @@ public:
     void render() const;
 
 private:
+    void create();
+
     unsigned m_vao = 0;
     unsigned m_vbo = 0;
     unsigned m_ibo = 0;
