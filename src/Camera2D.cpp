@@ -34,9 +34,6 @@ constexpr float round(float val) {
 }
 
 glm::vec3 Camera2D::getTransform() {
-    m_transform.x = std::floor(m_transform.x * 100) / 100;
-    m_transform.y = std::floor(m_transform.y * 100) / 100;
-    std::cout << m_transform.x << " " << m_transform.y << std::endl;
     return {
         round<3>(m_transform.x / m_size.x),
         round<3>(m_transform.y / m_size.y),

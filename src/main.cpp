@@ -15,9 +15,6 @@
 #include "Window.hpp"
 
 int main() {
-
-    auto window = Window(1280, 720, "LDtkViewer");
-
     auto vert_src = GLSL(330 core,
         uniform vec2 window_size;
         uniform vec2 texture_size;
@@ -57,6 +54,9 @@ int main() {
             FragColor = texture(texture0, tex_coords);
         }
     );
+
+    Window window(1280, 720, "LDtkViewer");
+
     Shader shader;
     shader.load(vert_src, frag_src);
 
@@ -64,18 +64,12 @@ int main() {
     texture.load("../res/tileset.png");
 
     ldtk::World world;
-    try {
-        world.loadFromFile("../res/level.ldtk");
-    }
-    catch (const std::exception& exception) {
-        std::cerr << exception.what() << std::endl;
-        return -1;
-    }
+    world.loadFromFile("../res/level.ldtk");
     const auto& level = world.getLevel("Level");
     const auto& tiles = level.getLayer("Ground").allTiles();
 
-    std::vector<Vertex> vertices;
-    vertices.reserve(tiles.size());
+    VertexArray va;
+    va.reserve(tiles.size());
     for (const auto& tile : tiles) {
         for (int i = 0; i < 4; ++i) {
             Vertex vert{};
@@ -83,13 +77,9 @@ int main() {
             vert.pos.y = tile.vertices[i].pos.y;
             vert.tex.x = static_cast<float>(tile.vertices[i].tex.x);
             vert.tex.y = static_cast<float>(tile.vertices[i].tex.y);
-            vertices.push_back(vert);
+            va.push(vert);
         }
     }
-
-    VertexArray va;
-    va.copy(vertices);
-
 
     Camera2D camera(window.getSize());
     camera.centerOn(level.size.x / 2, level.size.y / 2);
@@ -143,7 +133,6 @@ int main() {
         shader.bind();
         shader.setUniform("window_size", glm::vec2(window.getSize()));
         shader.setUniform("texture_size", glm::vec2(texture.getSize()));
-
         shader.setUniform("transform", camera.getTransform());
 
         texture.bind();

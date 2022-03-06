@@ -16,6 +16,8 @@ public:
     VertexArray();
     ~VertexArray();
 
+    void reserve(std::size_t n);
+
     void copy(std::vector<Vertex>& other);
     void push(const Vertex& vertex);
 

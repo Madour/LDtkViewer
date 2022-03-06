@@ -30,6 +30,11 @@ VertexArray::~VertexArray() {
     glDeleteBuffers(1, &m_vbo);
 }
 
+void VertexArray::reserve(std::size_t n) {
+    m_vertices.reserve(n);
+    m_indices.reserve((n / 4) * 6);
+}
+
 void VertexArray::copy(std::vector<Vertex>& other) {
     m_vertices.clear();
     m_vertices.resize(other.size());
