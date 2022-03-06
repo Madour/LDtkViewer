@@ -8,6 +8,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include "Camera2D.hpp"
 #include "Shader.hpp"
 #include "Texture.hpp"
 #include "VertexArray.hpp"
@@ -18,45 +19,43 @@ int main() {
     auto window = Window(1280, 720, "LDtkViewer");
 
     auto vert_src = GLSL(330 core,
-         uniform vec2 window_size;
-         uniform vec2 texture_size;
+        uniform vec2 window_size;
+        uniform vec2 texture_size;
 
-         uniform vec2 scale;
-         uniform vec2 translation;
+        uniform vec3 transform;
 
-         layout (location = 0) in vec2 i_position;
-         layout (location = 1) in vec2 i_texcoord;
+        layout (location = 0) in vec2 i_position;
+        layout (location = 1) in vec2 i_texcoord;
 
-         out vec2 tex_coords;
+        out vec2 tex_coords;
 
-         void main()
-         {
-             vec2 pos = i_position;
-             pos.x /= window_size.x;
-             pos.y /= window_size.y;
-             pos.x += translation.x;
-             pos.y += translation.y;
-             pos.x *= scale.x;
-             pos.y *= scale.y;
+        void main()
+        {
+            vec2 pos = i_position;
+            pos.x /= window_size.x;
+            pos.y /= window_size.y;
+            pos.x += transform.x;
+            pos.y += transform.y;
+            pos.x *= transform.z;
+            pos.y *= transform.z;
 
-             tex_coords = i_texcoord;
-             tex_coords.x /= texture_size.x;
-             tex_coords.y /= texture_size.y;
+            tex_coords = i_texcoord;
+            tex_coords.x /= texture_size.x;
+            tex_coords.y /= texture_size.y;
 
-             gl_Position = vec4(pos, 0.0, 1.0);
-         }
+            gl_Position = vec4(pos.x, -pos.y, 0, 1.0);
+        }
     );
     auto frag_src = GLSL(330 core,
-         in vec2 tex_coords;
+        uniform sampler2D texture0;
 
-         uniform sampler2D texture0;
+        in vec2 tex_coords;
+        out vec4 FragColor;
 
-         out vec4 FragColor;
-
-         void main()
-         {
-             FragColor = texture(texture0, tex_coords);
-         }
+        void main()
+        {
+            FragColor = texture(texture0, tex_coords);
+        }
     );
     Shader shader;
     shader.load(vert_src, frag_src);
@@ -80,8 +79,8 @@ int main() {
     for (const auto& tile : tiles) {
         for (int i = 0; i < 4; ++i) {
             Vertex vert{};
-            vert.pos.x = tile.vertices[i].pos.x - level.size.x / 2.f;
-            vert.pos.y = -tile.vertices[i].pos.y + level.size.y / 2.f;
+            vert.pos.x = tile.vertices[i].pos.x;
+            vert.pos.y = tile.vertices[i].pos.y;
             vert.tex.x = static_cast<float>(tile.vertices[i].tex.x);
             vert.tex.y = static_cast<float>(tile.vertices[i].tex.y);
             vertices.push_back(vert);
@@ -92,8 +91,8 @@ int main() {
     va.copy(vertices);
 
 
-    auto scale = glm::vec2(1.f, 1.f);
-    auto translation = glm::vec2(0.f, 0.f);
+    Camera2D camera(window.getSize());
+    camera.centerOn(level.size.x / 2, level.size.y / 2);
 
     while (window.isOpen()) {
         auto mouse_pos = window.getMousePosition();
@@ -103,23 +102,23 @@ int main() {
                 if (key->action == GLFW_PRESS) {
                     switch (key->key) {
                         case GLFW_KEY_KP_ADD:
-                            scale *= 1.1;
+                            camera.zoom(1.5);
                             break;
                         case GLFW_KEY_KP_SUBTRACT:
-                            scale *= 0.9;
+                            camera.zoom(0.5);
                             break;
 
                         case GLFW_KEY_LEFT:
-                            translation.x -= 0.01f;
+                            camera.move(-5, 0);
                             break;
                         case GLFW_KEY_RIGHT:
-                            translation.x += 0.01f;
+                            camera.move(5, 0);
                             break;
                         case GLFW_KEY_UP:
-                            translation.y += 0.01f;
+                            camera.move(0, -5);
                             break;
                         case GLFW_KEY_DOWN:
-                            translation.y -= 0.01f;
+                            camera.move(0, 5);
                             break;
 
                         case GLFW_KEY_ESCAPE:
@@ -145,8 +144,7 @@ int main() {
         shader.setUniform("window_size", glm::vec2(window.getSize()));
         shader.setUniform("texture_size", glm::vec2(texture.getSize()));
 
-        shader.setUniform("scale", scale);
-        shader.setUniform("translation", translation);
+        shader.setUniform("transform", camera.getTransform());
 
         texture.bind();
 
