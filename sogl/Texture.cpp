@@ -1,6 +1,8 @@
 // Created by Modar Nasser on 05/03/2022.
 
 #include "Texture.hpp"
+
+#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #include <GL/glew.h>
@@ -24,7 +26,7 @@ void Texture::load(const std::filesystem::path& file) {
     }
 }
 
-void Texture::bind() {
+void Texture::bind() const {
     glBindTexture(GL_TEXTURE_2D, m_texture);
 }
 

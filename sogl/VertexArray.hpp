@@ -23,7 +23,7 @@ public:
     void pushTriangle(const std::array<Vertex, 3>& vertices);
     void pushQuad(const std::array<Vertex, 4>& vertices);
 
-    void bind();
+    void bind() const;
 
     void render() const;
 
@@ -32,9 +32,9 @@ private:
     unsigned m_vbo = 0;
     unsigned m_ibo = 0;
 
-    bool m_dirty = false;
-
     std::vector<Vertex> m_vertices;
     std::vector<unsigned> m_indices;
+
+    mutable bool m_dirty = false;
 };
 

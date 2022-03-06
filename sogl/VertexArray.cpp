@@ -87,14 +87,14 @@ void VertexArray::pushQuad(const std::array<Vertex, 4>& vertices) {
     m_dirty = true;
 }
 
-void VertexArray::bind() {
+void VertexArray::bind() const {
     if (m_dirty) {
         glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-        glBufferData(GL_ARRAY_BUFFER, m_vertices.size() * sizeof(Vertex), reinterpret_cast<float*>(m_vertices.data()), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, m_vertices.size() * sizeof(Vertex), reinterpret_cast<float*>(const_cast<Vertex*>(m_vertices.data())), GL_STATIC_DRAW);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(int), reinterpret_cast<int*>(m_indices.data()), GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * sizeof(unsigned), const_cast<unsigned*>(m_indices.data()), GL_STATIC_DRAW);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
         m_dirty = false;

@@ -11,7 +11,7 @@ public:
     Texture();
     void load(const std::filesystem::path& file);
 
-    void bind();
+    void bind() const;
 
     const glm::vec<2, int>& getSize() const;
     int getChannelsCount() const;

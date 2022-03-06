@@ -6,9 +6,6 @@
 #include <glm/glm.hpp>
 #include <LDtkLoader/World.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "sogl/stb_image.h"
-
 #include "sogl/Shader.hpp"
 #include "sogl/Texture.hpp"
 #include "sogl/VertexArray.hpp"
@@ -28,8 +25,7 @@ int main() {
 
         out vec2 tex_coords;
 
-        void main()
-        {
+        void main() {
             vec2 pos = i_position;
             pos.x /= window_size.x;
             pos.y /= window_size.y;
@@ -47,13 +43,14 @@ int main() {
     );
     auto frag_src = GLSL(330 core,
         uniform sampler2D texture0;
+        uniform float opacity;
 
         in vec2 tex_coords;
         out vec4 FragColor;
 
-        void main()
-        {
-            FragColor = texture(texture0, tex_coords);
+        void main() {
+            vec4 tex_color = texture(texture0, tex_coords);
+            FragColor = vec4(tex_color.rgb, tex_color.a * opacity);
         }
     );
 
@@ -146,6 +143,7 @@ int main() {
         shader.setUniform("window_size", glm::vec2(window.getSize()));
         shader.setUniform("texture_size", glm::vec2(texture.getSize()));
         shader.setUniform("transform", camera.getTransform());
+        shader.setUniform("opacity", 1.f);
 
         texture.bind();
 
