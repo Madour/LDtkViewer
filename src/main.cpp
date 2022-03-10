@@ -80,6 +80,8 @@ int main() {
 
     bool camera_grabbed = false;
     glm::vec<2, int> grab_pos = {0, 0};
+    auto world_bg = world.getBgColor();
+    glm::vec<3, float> clear_color = {world_bg.r / 255.f, world_bg.g / 255.f, world_bg.b/255.f};
 
     while (window.isOpen()) {
         auto mouse_pos = window.getMousePosition();
@@ -123,7 +125,7 @@ int main() {
             }
         }
 
-        window.clear();
+        window.clear(clear_color);
 
         shader.bind();
         shader.setUniform("window_size", glm::vec2(window.getSize()));
