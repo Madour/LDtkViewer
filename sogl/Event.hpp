@@ -8,25 +8,11 @@
 class Event {
     friend class Window;
 public:
-    struct Key {
-        int key;
-        int scancode;
-        int action;
-        int mods;
-    };
-    struct MouseButton {
-        int button;
-        int action;
-        int mods;
-    };
-    struct MouseMove {
-        int x;
-        int y;
-    };
-    struct Scroll {
-        int dx;
-        int dy;
-    };
+    struct Key { int key; int scancode; int action; int mods; };
+    struct MouseButton { int button; int action; int mods; };
+    struct MouseMove { int x; int y; };
+    struct Scroll { int dx; int dy; };
+    struct Resize { int width; int height; };
 
     Event() = default;
 
@@ -39,6 +25,7 @@ public:
     }
 
 private:
-    std::variant<Key, MouseButton, MouseMove, Scroll> m_data;
-    Event(decltype(m_data));
+    using EventTypes = std::variant<Key, MouseButton, MouseMove, Scroll, Resize>;
+    EventTypes m_data;
+    Event(EventTypes);
 };

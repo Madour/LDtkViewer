@@ -2,5 +2,7 @@
 
 #include "Event.hpp"
 
-Event::Event(decltype(m_data) data) : m_data(data)
+#include <utility>
+
+Event::Event(EventTypes data) : m_data(std::move(data))
 {}
