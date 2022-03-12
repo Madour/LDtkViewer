@@ -50,6 +50,7 @@ Window::Window(int width, int height, const std::string& title) {
     };
 
     auto window_size_callback = [](GLFWwindow* window, int width, int height) {
+        self->m_size = {width, height};
         glViewport(0, 0, width, height);
     };
 
