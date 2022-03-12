@@ -11,6 +11,10 @@
 #include "sogl/VertexArray.hpp"
 #include "sogl/Window.hpp"
 
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_glfw.h"
+#include "imgui/imgui_impl_opengl3.h"
+
 #include "Camera2D.hpp"
 #include "Layer.hpp"
 
@@ -63,6 +67,11 @@ int main() {
 
     Window window(1280, 720, "LDtkViewer");
 
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui_ImplGlfw_InitForOpenGL(&window, true);
+    ImGui_ImplOpenGL3_Init("#version 330 core");
+
     Shader shader;
     shader.load(vert_src, frag_src);
 
@@ -94,6 +103,8 @@ int main() {
 
         while (auto event = window.nextEvent()) {
             if (auto key = event->as<Event::Key>()) {
+                if (ImGui::GetIO().WantCaptureKeyboard)
+                    continue;
                 if (key->action == GLFW_PRESS) {
                     switch (key->key) {
                         case GLFW_KEY_ESCAPE:
@@ -105,6 +116,8 @@ int main() {
                 }
             }
             else if (auto btn = event->as<Event::MouseButton>()) {
+                if (ImGui::GetIO().WantCaptureMouse)
+                    continue;
                 if (btn->button == GLFW_MOUSE_BUTTON_LEFT) {
                     if (btn->action == GLFW_PRESS) {
                         camera_grabbed = true;
@@ -123,6 +136,8 @@ int main() {
                 }
             }
             else if (auto scroll = event->as<Event::Scroll>()) {
+                if (ImGui::GetIO().WantCaptureMouse)
+                    continue;
                 if (scroll->dy < 0) {
                     camera.zoom(0.9f);
                 } else if (scroll->dy > 0) {
@@ -142,6 +157,13 @@ int main() {
             shader.setUniform("texture_size", glm::vec2(layer.getTexture().getSize()));
             layer.render();
         }
+
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        ImGui::ShowDemoWindow();
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         window.display();
     }

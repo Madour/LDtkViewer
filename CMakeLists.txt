@@ -46,9 +46,6 @@ endif()
 
 find_package(LDtkLoader 0.10)
 
-file(GLOB_RECURSE SRC src/*.cpp sogl/*.cpp)
-file(GLOB_RECURSE INC src/*.hpp sogl/*.hpp)
-
 if(MSVC)
     add_compile_options(
             $<$<CONFIG:>:/MD> #---------|
@@ -57,7 +54,22 @@ if(MSVC)
     )
 endif()
 
+file(GLOB_RECURSE sogl_SRC sogl/*.cpp)
+file(GLOB_RECURSE sogl_INC sogl/*.hpp)
+add_library(sogl STATIC ${sogl_SRC} ${sogl_INC})
+target_link_libraries(sogl PUBLIC libglew_static glfw glm)
+set_target_properties(sogl PROPERTIES DEBUG_POSTFIX -d)
+
+file(GLOB_RECURSE imgui_SRC imgui/*.cpp)
+file(GLOB_RECURSE imgui_INC imgui/*.h)
+add_library(ImGui STATIC ${imgui_SRC} ${imgui_INC})
+set_target_properties(ImGui PROPERTIES DEBUG_POSTFIX -d)
+target_link_libraries(ImGui PRIVATE glfw)
+
+file(GLOB_RECURSE SRC src/*.cpp)
+file(GLOB_RECURSE INC src/*.hpp)
+
 add_executable(LDtkViewer ${SRC} ${INC})
 target_include_directories(LDtkViewer PRIVATE src .)
-target_link_libraries(LDtkViewer PRIVATE libglew_static glfw glm LDtkLoader)
+target_link_libraries(LDtkViewer PRIVATE LDtkLoader sogl ImGui)
 set_target_properties(LDtkViewer PROPERTIES DEBUG_POSTFIX -d)

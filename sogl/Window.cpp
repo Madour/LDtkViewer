@@ -107,6 +107,10 @@ glm::vec<2, int> Window::getMousePosition() const {
     return {static_cast<int>(x), static_cast<int>(y)};
 }
 
+auto Window::operator&() -> GLFWwindow* {
+    return m_window;
+}
+
 void Window::clear(const glm::vec<3, float>& color) {
     glClearColor(color.r, color.g, color.b, 1.f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

@@ -27,6 +27,8 @@ public:
     std::optional<Event> nextEvent();
     glm::vec<2, int> getMousePosition() const;
 
+    auto operator&() -> GLFWwindow*;
+
     void clear(const glm::vec<3, float>& color = {0, 0, 0});
     void display();
 
