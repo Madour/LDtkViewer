@@ -13,6 +13,9 @@ Layer::Layer(const ldtk::Layer& layer) {
 
     m_va.reserve(layer.allTiles().size() * 4);
     for (const auto& tile : layer.allTiles()) {
+        if (tile.getPosition().x < 0 || tile.getPosition().x > layer.getGridSize().x * layer.getCellSize()
+         || tile.getPosition().y < 0 || tile.getPosition().y > layer.getGridSize().y * layer.getCellSize())
+            continue;
         auto tile_verts = tile.getVertices();
         std::array<sogl::Vertex, 4> quad {};
         for (int i = 0; i < 4; ++i) {
