@@ -9,6 +9,10 @@
 Camera2D::Camera2D(const glm::vec2& size) : m_size(size)
 {}
 
+void Camera2D::setSize(const glm::vec2& size) {
+    m_size = size;
+}
+
 void Camera2D::move(float x, float y) {
     m_transform.x -= x;
     m_transform.y -= y;
