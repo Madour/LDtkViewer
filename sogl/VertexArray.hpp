@@ -10,6 +10,7 @@
 struct Vertex {
     glm::vec2 pos;
     glm::vec2 tex;
+    glm::vec4 col;
 };
 
 class VertexArray {
@@ -20,13 +21,11 @@ public:
     VertexArray& operator=(const VertexArray&);
 
     void reserve(std::size_t n);
-    void copy(const std::vector<Vertex>& other);
 
     void pushTriangle(const std::array<Vertex, 3>& vertices);
     void pushQuad(const std::array<Vertex, 4>& vertices);
 
     void bind() const;
-
     void render() const;
 
 private:

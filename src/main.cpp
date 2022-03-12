@@ -21,23 +21,26 @@ int main() {
 
         uniform vec3 transform;
 
-        layout (location = 0) in vec2 i_position;
-        layout (location = 1) in vec2 i_texcoord;
+        layout (location = 0) in vec2 i_pos;
+        layout (location = 1) in vec2 i_tex;
+        layout (location = 2) in vec4 i_col;
 
-        out vec2 tex_coords;
+        out vec2 pos;
+        out vec2 tex;
+        out vec4 col;
 
         void main() {
-            vec2 pos = i_position;
-            pos.x /= window_size.x;
-            pos.y /= window_size.y;
-            pos.x += transform.x;
-            pos.y += transform.y;
-            pos.x *= 2*transform.z;
-            pos.y *= 2*transform.z;
+            // normalize position
+            pos.xy = i_pos.xy / window_size.xy;
 
-            tex_coords = i_texcoord;
-            tex_coords.x /= texture_size.x;
-            tex_coords.y /= texture_size.y;
+            // apply camera transform
+            pos.xy += transform.xy;
+            pos.xy *= 2*transform.z;
+
+            // normalize texture coordinates
+            tex.xy = i_tex.xy / texture_size.xy;
+
+            col = i_col;
 
             gl_Position = vec4(pos.x, -pos.y, 0, 1.0);
         }
@@ -46,12 +49,15 @@ int main() {
         uniform sampler2D texture0;
         uniform float opacity;
 
-        in vec2 tex_coords;
-        out vec4 FragColor;
+        in vec2 pos;
+        in vec2 tex;
+        in vec4 col;
+
+        out vec4 gl_FragColor;
 
         void main() {
-            vec4 tex_color = texture(texture0, tex_coords);
-            FragColor = vec4(tex_color.rgb, tex_color.a * opacity);
+            vec4 tex_color = texture(texture0, tex);
+            gl_FragColor = vec4(tex_color.rgb * col.rgb, tex_color.a * opacity * col.a);
         }
     );
 
@@ -130,10 +136,10 @@ int main() {
         shader.bind();
         shader.setUniform("window_size", glm::vec2(window.getSize()));
         shader.setUniform("transform", camera.getTransform());
+        shader.setUniform("opacity", 1.f);
 
         for (auto& layer : layers) {
             shader.setUniform("texture_size", glm::vec2(layer.getTexture().getSize()));
-            shader.setUniform("opacity", layer.getOpacity());
             layer.render();
         }
 

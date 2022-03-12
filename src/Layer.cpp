@@ -11,8 +11,6 @@ Layer::Layer(const ldtk::Layer& layer) {
     auto proj_dir = layer.level->world->getFilePath().directory();
     m_texture = &TextureManager::get(proj_dir + layer.getTileset().path);
 
-    m_opacity = layer.getOpacity();
-
     m_va.reserve(layer.allTiles().size() * 4);
     for (const auto& tile : layer.allTiles()) {
         auto tile_verts = tile.getVertices();
@@ -22,6 +20,7 @@ Layer::Layer(const ldtk::Layer& layer) {
             quad[i].pos.y = layer.level->position.y + tile_verts[i].pos.y;
             quad[i].tex.x = static_cast<float>(tile_verts[i].tex.x);
             quad[i].tex.y = static_cast<float>(tile_verts[i].tex.y);
+            quad[i].col = {1.f, 1.f, 1.f, layer.getOpacity()};
         }
         m_va.pushQuad(quad);
     }
@@ -29,10 +28,6 @@ Layer::Layer(const ldtk::Layer& layer) {
 
 const Texture& Layer::getTexture() const {
     return *m_texture;
-}
-
-float Layer::getOpacity() const {
-    return m_opacity;
 }
 
 void Layer::render() {

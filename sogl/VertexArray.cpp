@@ -37,10 +37,13 @@ void VertexArray::create() {
     glBufferData(GL_ARRAY_BUFFER, 0, nullptr, GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) offsetof(Vertex, pos));
 
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_TRUE, sizeof(Vertex), (void*)sizeof(glm::vec2));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) offsetof(Vertex, tex));
+
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) offsetof(Vertex, col));
 
     glGenBuffers(1, &m_ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo);
@@ -50,28 +53,6 @@ void VertexArray::create() {
 void VertexArray::reserve(std::size_t n) {
     m_vertices.reserve(n);
     m_indices.reserve((n / 4) * 6);
-}
-
-void VertexArray::copy(const std::vector<Vertex>& other) {
-    m_vertices.clear();
-    m_vertices.resize(other.size());
-    for (std::size_t i = 0; i < other.size(); ++i) {
-        m_vertices[i] = other.at(i);
-    }
-
-    m_indices.clear();
-    m_indices.resize(m_vertices.size() / 4 * 6);
-    for (int i = 0; i < m_indices.size(); i += 6) {
-        int index_offset = (i / 6) * 4;
-        m_indices[i + 0] = index_offset;
-        m_indices[i + 1] = index_offset + 1;
-        m_indices[i + 2] = index_offset + 2;
-        m_indices[i + 3] = index_offset;
-        m_indices[i + 4] = index_offset + 2;
-        m_indices[i + 5] = index_offset + 3;
-    }
-
-    m_dirty = true;
 }
 
 void VertexArray::pushTriangle(const std::array<Vertex, 3>& vertices) {
