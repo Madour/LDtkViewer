@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "sogl/Texture.hpp"
+#include <sogl/Texture.hpp>
 
 #include <map>
 
@@ -10,9 +10,9 @@ class TextureManager {
 public:
     TextureManager(const TextureManager&) = delete;
     TextureManager(TextureManager&&) = delete;
-    static auto get(const std::string& name)  -> Texture&;
+    static sogl::Texture& get(const std::string& name);
 private:
     TextureManager() = default;
-    static auto instance() -> TextureManager&;
-    std::map<std::string, Texture> data;
+    static TextureManager& instance();
+    std::map<std::string, sogl::Texture> data;
 };

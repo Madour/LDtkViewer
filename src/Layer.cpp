@@ -14,7 +14,7 @@ Layer::Layer(const ldtk::Layer& layer) {
     m_va.reserve(layer.allTiles().size() * 4);
     for (const auto& tile : layer.allTiles()) {
         auto tile_verts = tile.getVertices();
-        std::array<Vertex, 4> quad {};
+        std::array<sogl::Vertex, 4> quad {};
         for (int i = 0; i < 4; ++i) {
             quad[i].pos.x = layer.level->position.x + tile_verts[i].pos.x;
             quad[i].pos.y = layer.level->position.y + tile_verts[i].pos.y;
@@ -26,7 +26,7 @@ Layer::Layer(const ldtk::Layer& layer) {
     }
 }
 
-const Texture& Layer::getTexture() const {
+const sogl::Texture& Layer::getTexture() const {
     return *m_texture;
 }
 

@@ -2,12 +2,12 @@
 
 #include "TextureManager.hpp"
 
-auto TextureManager::instance() -> TextureManager& {
+TextureManager& TextureManager::instance() {
     static TextureManager instance;
     return instance;
 }
 
-auto TextureManager::get(const std::string& name) -> Texture& {
+sogl::Texture& TextureManager::get(const std::string& name) {
     auto& data = instance().data;
     if (data.count(name) == 0)
         data[name].load(name);

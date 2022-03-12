@@ -2,18 +2,18 @@
 
 #pragma once
 
-#include <LDtkLoader/Layer.hpp>
+#include <sogl/Texture.hpp>
+#include <sogl/VertexArray.hpp>
 
-#include "sogl/Texture.hpp"
-#include "sogl/VertexArray.hpp"
+#include <LDtkLoader/Layer.hpp>
 
 class Layer {
 public:
     explicit Layer(const ldtk::Layer& layer);
-    const Texture& getTexture() const;
+    const sogl::Texture& getTexture() const;
     void render();
 private:
-    VertexArray m_va;
-    Texture* m_texture;
+    sogl::VertexArray m_va;
+    sogl::Texture* m_texture;
 };
 

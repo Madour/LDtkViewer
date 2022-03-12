@@ -3,8 +3,6 @@
 #include "Camera2D.hpp"
 
 #include <cmath>
-#include <iostream>
-
 
 Camera2D::Camera2D(const glm::vec2& size) : m_size(size)
 {}
