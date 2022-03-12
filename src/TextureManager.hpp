@@ -11,6 +11,7 @@ public:
     TextureManager(const TextureManager&) = delete;
     TextureManager(TextureManager&&) = delete;
     static sogl::Texture& get(const std::string& name);
+    static void clear();
 private:
     TextureManager() = default;
     static TextureManager& instance();

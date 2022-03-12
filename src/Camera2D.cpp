@@ -4,6 +4,9 @@
 
 #include <cmath>
 
+Camera2D::Camera2D() : m_size(1.f, 1.f)
+{}
+
 Camera2D::Camera2D(const glm::vec2& size) : m_size(size)
 {}
 

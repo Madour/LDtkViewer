@@ -13,3 +13,7 @@ sogl::Texture& TextureManager::get(const std::string& name) {
         data[name].load(name);
     return instance().data.at(name);
 }
+
+void TextureManager::clear() {
+    instance().data.clear();
+}

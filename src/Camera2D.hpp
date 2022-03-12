@@ -6,6 +6,7 @@
 
 class Camera2D {
 public:
+    Camera2D();
     Camera2D(const glm::vec2& size);
     void setSize(const glm::vec2& size);
 
