@@ -4,6 +4,7 @@
 
 #include "Camera2D.hpp"
 #include "Layer.hpp"
+#include "LDtkProject.hpp"
 
 #include <sogl/sogl.hpp>
 
@@ -24,8 +25,8 @@ private:
 
     sogl::Window m_window;
     sogl::Shader m_shader;
-    std::map<std::string, std::vector<Layer>> m_worlds;
-    std::map<std::string, bool> m_worlds_select;
+    std::map<std::string, LDtkProject> m_projects;
+    std::string m_selected_project;
     Camera2D m_camera;
     glm::vec<3, float> m_clear_color;
 

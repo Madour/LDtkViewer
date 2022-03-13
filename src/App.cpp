@@ -24,20 +24,21 @@ void App::run() {
             processEvent(event.value());
         }
 
-        m_window.clear(m_clear_color);
+        if (m_selected_project.empty())
+            m_window.clear(m_clear_color);
+        else
+            m_window.clear(m_projects.at(m_selected_project).bg_color);
 
         m_shader.bind();
         m_shader.setUniform("window_size", glm::vec2(m_window.getSize()));
         m_shader.setUniform("transform", m_camera.getTransform());
         m_shader.setUniform("opacity", 1.f);
 
-        for (auto& [name, layers] : m_worlds) {
-            if (m_worlds_select[name])
-                for (auto& layer : layers) {
-                    m_shader.setUniform("texture_size", glm::vec2(layer.getTexture().getSize()));
-                    layer.render();
-                }
-        }
+        if (!m_selected_project.empty())
+            for (const auto& world : m_projects.at(m_selected_project).worlds)
+                for (const auto& level : world.levels)
+                    for (const auto& layer : level.layers)
+                        layer.render(m_shader);
 
         renderImGui();
 
@@ -101,26 +102,9 @@ void App::processEvent(sogl::Event& event) {
 }
 
 bool App::loadLDtkFile(const char* path) {
-    ldtk::World world;
-    try {
-        world.loadFromFile(path);
-    } catch(std::exception& ex) {
-        std::cout << ex.what() << std::endl;
-        return false;
-    }
-    auto world_name = world.getFilePath().filename();
-    auto& bg = world.getBgColor();
+    m_projects.insert({path, {}});
+    m_projects[path].load(path);
 
-    m_clear_color = {bg.r/255.f, bg.g/255.f, bg.b/255.f};
-
-    m_worlds[world_name].reserve(world.allLevels().size()*world.allLevels()[0].allLayers().size());
-    m_worlds_select[world_name] = true;
-    for (const auto& level : world.allLevels()) {
-        for (const auto& layer : level.allLayers()) {
-            if (!layer.allTiles().empty())
-                m_worlds.at(world_name).emplace(m_worlds.at(world_name).begin(), layer);
-        }
-    }
     return true;
 }
 
@@ -161,25 +145,23 @@ void App::renderImGui() {
     }
     {
         static std::map<std::string, bool> worlds_tabs;
-        worlds_tabs.clear();
         ImGui::SetNextWindowSize({(float)m_window.getSize().x-200.f, 20.});
         ImGui::SetNextWindowPos({200.f, 0});
         ImGui::Begin("Full", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration
                                     | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
         ImGui::BeginTabBar("WorldsSelector");
-        for (auto& [name, _] : m_worlds) {
+        worlds_tabs.clear();
+        for (auto& [name, _] : m_projects) {
             worlds_tabs[name] = true;
             if (ImGui::BeginTabItem(name.c_str(), &worlds_tabs[name])) {
-                m_worlds_select[name] = true;
+                m_selected_project = name;
                 ImGui::EndTabItem();
-            } else {
-                m_worlds_select[name] = false;
             }
         }
         for (auto& [name, open] : worlds_tabs) {
             if (!open) {
-                m_worlds.erase(name);
-                m_worlds_select.erase(name);
+                m_projects.erase(name);
+                m_selected_project = "";
             }
         }
 
