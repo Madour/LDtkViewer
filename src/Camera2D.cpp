@@ -4,7 +4,7 @@
 
 #include <cmath>
 
-Camera2D::Camera2D() : m_size(1.f, 1.f)
+Camera2D::Camera2D() : m_size(1.f, 1.f), m_offset(0.f, 0.f)
 {}
 
 Camera2D::Camera2D(const glm::vec2& size) : m_size(size)
@@ -12,6 +12,10 @@ Camera2D::Camera2D(const glm::vec2& size) : m_size(size)
 
 void Camera2D::setSize(const glm::vec2& size) {
     m_size = size;
+}
+
+void Camera2D::setOffset(const glm::vec2& offset) {
+    m_offset = offset;
 }
 
 void Camera2D::move(float x, float y) {
@@ -48,8 +52,8 @@ constexpr float round(float val) {
 
 glm::vec3 Camera2D::getTransform() const {
     return {
-        round<3>(m_transform.x / m_size.x),
-        round<3>(m_transform.y / m_size.y),
+        round<3>((m_transform.x + m_offset.x) / m_size.x),
+        round<3>((m_transform.y + m_offset.y) / m_size.y),
         round<3>(m_transform.z)
     };
 }
