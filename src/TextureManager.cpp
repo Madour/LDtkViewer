@@ -2,6 +2,8 @@
 
 #include "TextureManager.hpp"
 
+#include <iostream>
+
 TextureManager& TextureManager::instance() {
     static TextureManager instance;
     return instance;
@@ -10,7 +12,8 @@ TextureManager& TextureManager::instance() {
 sogl::Texture& TextureManager::get(const std::string& name) {
     auto& data = instance().data;
     if (data.count(name) == 0)
-        data[name].load(name);
+        if (!data[name].load(name))
+            std::cerr << "Failed to load Texture " << name << std::endl;
     return instance().data.at(name);
 }
 
