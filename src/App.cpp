@@ -9,6 +9,7 @@
 
 #include <LDtkLoader/World.hpp>
 
+#include <filesystem>
 
 App::App() : m_window(1280, 720, "LDtk World Viewer") {
     m_cameras.insert({"", {}});
@@ -168,7 +169,8 @@ void App::renderImGui() {
         worlds_tabs.clear();
         for (auto& [name, _] : m_projects) {
             worlds_tabs[name] = true;
-            if (ImGui::BeginTabItem(name.c_str(), &worlds_tabs[name])) {
+            auto filename = std::filesystem::path(name).filename().string();
+            if (ImGui::BeginTabItem(filename.c_str(), &worlds_tabs[name])) {
                 m_selected_project = name;
                 ImGui::EndTabItem();
             }
