@@ -53,7 +53,8 @@ void App::processEvent(sogl::Event& event) {
         m_camera.setSize({resize->width, resize->height});
     }
     else if (auto drop = event.as<sogl::Event::Drop>()) {
-        loadLDtkFile(drop->files[0].c_str());
+        for (auto& file : drop->files)
+            loadLDtkFile(file.c_str());
     }
     else if (auto key = event.as<sogl::Event::Key>()) {
         if (!ImGui::GetIO().WantCaptureKeyboard) {
@@ -112,8 +113,6 @@ bool App::loadLDtkFile(const char* path) {
 
     m_clear_color = {bg.r/255.f, bg.g/255.f, bg.b/255.f};
 
-    TextureManager::clear();
-    m_worlds.clear();
     m_worlds[world_name].reserve(world.allLevels().size()*world.allLevels()[0].allLayers().size());
     m_worlds_select[world_name] = true;
     for (const auto& level : world.allLevels()) {
@@ -161,18 +160,29 @@ void App::renderImGui() {
         ImGui::End();
     }
     {
+        static std::map<std::string, bool> worlds_tabs;
+        worlds_tabs.clear();
         ImGui::SetNextWindowSize({(float)m_window.getSize().x-200.f, 20.});
         ImGui::SetNextWindowPos({200.f, 0});
-        ImGui::Begin("Full", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration);
-        ImGui::BeginTabBar("WorldsSelector", ImGuiTabBarFlags_NoCloseWithMiddleMouseButton);
+        ImGui::Begin("Full", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration
+                                    | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
+        ImGui::BeginTabBar("WorldsSelector");
         for (auto& [name, _] : m_worlds) {
-            if (ImGui::BeginTabItem(name.c_str())) {
+            worlds_tabs[name] = true;
+            if (ImGui::BeginTabItem(name.c_str(), &worlds_tabs[name])) {
                 m_worlds_select[name] = true;
                 ImGui::EndTabItem();
             } else {
                 m_worlds_select[name] = false;
             }
         }
+        for (auto& [name, open] : worlds_tabs) {
+            if (!open) {
+                m_worlds.erase(name);
+                m_worlds_select.erase(name);
+            }
+        }
+
         ImGui::EndTabBar();
         ImGui::End();
     }
