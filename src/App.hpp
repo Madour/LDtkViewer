@@ -3,7 +3,7 @@
 #pragma once
 
 #include "LDtkProject.hpp"
-#include "LDtkProjectData.hpp"
+#include "LDtkProjectVariables.hpp"
 
 #include <sogl/sogl.hpp>
 
@@ -20,9 +20,13 @@ public:
 private:
     void processEvent(sogl::Event& event);
 
+    bool projectOpened();
+
     LDtkProject& getActiveProject();
     Camera2D& getActiveCamera();
+
     int getActiveDepth();
+    void setActiveDepth(int depth);
 
     void initImGui();
     void renderImGui();
@@ -32,7 +36,7 @@ private:
 
     std::string m_selected_project;
     std::map<std::string, LDtkProject> m_projects;
-    std::map<std::string, LDtkProjectData> m_projects_data;
+    std::map<std::string, LDtkProjectVariables> m_projects_vars;
 
     LDtkProject m_dummy_project;
 
@@ -58,7 +62,7 @@ private:
 
             // apply camera transform
             pos.xy += transform.xy;
-            pos.xy *= 2*transform.z;
+            pos.xy *= 2.*transform.z;
             pos.xy += offset.xy / window_size.xy;
 
             tex.xy = i_tex.xy;

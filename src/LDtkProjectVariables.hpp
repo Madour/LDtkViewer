@@ -4,7 +4,7 @@
 
 #include "Camera2D.hpp"
 
-struct LDtkProjectData {
+struct LDtkProjectVariables {
     Camera2D camera;
     int depth = 0;
 };
