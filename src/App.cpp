@@ -101,7 +101,7 @@ void App::processEvent(sogl::Event& event) {
                 if (btn-> action == GLFW_PRESS) {
                     auto& active_project_levels = getActiveProject().worlds[0].levels;
                     auto depth_offset = active_project_levels.begin()->first;
-                    auto depth = getActiveDepth() - depth_offset;
+                    auto depth = getActiveDepth()+1 - depth_offset;
                     m_projects_data[m_selected_project].depth = (depth % active_project_levels.size()) + depth_offset;
                 }
             }
