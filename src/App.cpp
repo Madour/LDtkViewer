@@ -11,11 +11,18 @@
 
 
 App::App() : m_window(1280, 720, "LDtk World Viewer") {
+    m_cameras.insert({"", {}});
     m_shader.load(vert_shader, frag_shader);
-    m_camera.setSize(m_window.getSize());
-    m_clear_color = {54.f/255.f, 60.f/255.f, 69.f/255.f};
-
     initImGui();
+}
+
+bool App::loadLDtkFile(const char* path) {
+    m_projects.insert({path, {}});
+    m_projects[path].load(path);
+
+    m_cameras.insert({path, {}});
+    m_cameras[path].setSize(m_window.getSize());
+    return true;
 }
 
 void App::run() {
@@ -25,20 +32,21 @@ void App::run() {
         }
 
         if (m_selected_project.empty())
-            m_window.clear(m_clear_color);
+            m_window.clear({54.f/255.f, 60.f/255.f, 69.f/255.f});
         else
-            m_window.clear(m_projects.at(m_selected_project).bg_color);
+            m_window.clear(getActiveProject().bg_color);
 
         m_shader.bind();
         m_shader.setUniform("window_size", glm::vec2(m_window.getSize()));
-        m_shader.setUniform("transform", m_camera.getTransform());
         m_shader.setUniform("opacity", 1.f);
 
-        if (!m_selected_project.empty())
-            for (const auto& world : m_projects.at(m_selected_project).worlds)
+        if (!m_selected_project.empty()) {
+            m_shader.setUniform("transform", getActiveCamera().getTransform());
+            for (const auto& world : getActiveProject().worlds)
                 for (const auto& level : world.levels)
                     for (const auto& layer : level.layers)
                         layer.render(m_shader);
+        }
 
         renderImGui();
 
@@ -51,7 +59,8 @@ void App::processEvent(sogl::Event& event) {
     static glm::vec<2, int> grab_pos;
 
     if (auto resize = event.as<sogl::Event::Resize>()) {
-        m_camera.setSize({resize->width, resize->height});
+        for (auto& [_, camera] : m_cameras)
+            camera.setSize({resize->width, resize->height});
     }
     else if (auto drop = event.as<sogl::Event::Drop>()) {
         for (auto& file : drop->files)
@@ -84,28 +93,33 @@ void App::processEvent(sogl::Event& event) {
     }
     else if (auto move = event.as<sogl::Event::MouseMove>()) {
         if (camera_grabbed) {
-            auto dx = (grab_pos.x - move->x) / m_camera.getZoom();
-            auto dy = (grab_pos.y - move->y) / m_camera.getZoom();
+            auto& camera = getActiveCamera();
+            auto dx = (grab_pos.x - move->x) / camera.getZoom();
+            auto dy = (grab_pos.y - move->y) / camera.getZoom();
             grab_pos = {move->x, move->y};
-            m_camera.move(dx, dy);
+            camera.move(dx, dy);
         }
     }
     else if (auto scroll = event.as<sogl::Event::Scroll>()) {
         if (!ImGui::GetIO().WantCaptureMouse) {
+            auto& camera = getActiveCamera();
             if (scroll->dy < 0) {
-                m_camera.zoom(0.9f);
+                camera.zoom(0.9f);
             } else if (scroll->dy > 0) {
-                m_camera.zoom(1.1f);
+                camera.zoom(1.1f);
             }
         }
     }
 }
 
-bool App::loadLDtkFile(const char* path) {
-    m_projects.insert({path, {}});
-    m_projects[path].load(path);
+LDtkProject& App::getActiveProject() {
+    if (m_selected_project.empty())
+        return m_dummy_project;
+    return m_projects.at(m_selected_project);
+}
 
-    return true;
+Camera2D& App::getActiveCamera() {
+    return m_cameras.at(m_selected_project);
 }
 
 void App::initImGui() {
@@ -125,6 +139,7 @@ void App::renderImGui() {
         ImGui::ShowDemoWindow(&show_demo_window);
     {
         static float f = 0.0f;
+        static float color[3];
         static int counter = 0;
 
         ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
@@ -133,7 +148,7 @@ void App::renderImGui() {
         ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
 
         ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-        ImGui::ColorEdit3("clear color", (float*)&m_clear_color); // Edit 3 floats representing a color
+        ImGui::ColorEdit3("clear color", color);                // Edit 3 floats representing a color
 
         if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
             counter++;
@@ -161,7 +176,8 @@ void App::renderImGui() {
         for (auto& [name, open] : worlds_tabs) {
             if (!open) {
                 m_projects.erase(name);
-                m_selected_project = "";
+                m_cameras.erase(name);
+                m_selected_project.clear();
             }
         }
 

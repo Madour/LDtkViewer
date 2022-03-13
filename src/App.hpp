@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Camera2D.hpp"
-#include "Layer.hpp"
 #include "LDtkProject.hpp"
 
 #include <sogl/sogl.hpp>
@@ -20,15 +19,21 @@ public:
 
 private:
     void processEvent(sogl::Event& event);
+
+    LDtkProject& getActiveProject();
+    Camera2D& getActiveCamera();
+
     void initImGui();
     void renderImGui();
 
     sogl::Window m_window;
     sogl::Shader m_shader;
-    std::map<std::string, LDtkProject> m_projects;
+
     std::string m_selected_project;
-    Camera2D m_camera;
-    glm::vec<3, float> m_clear_color;
+    std::map<std::string, LDtkProject> m_projects;
+    std::map<std::string, Camera2D> m_cameras;
+
+    LDtkProject m_dummy_project;
 
     static constexpr auto vert_shader = GLSL(330 core,
         uniform vec2 window_size = vec2(0.0, 0.0);
