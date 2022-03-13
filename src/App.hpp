@@ -7,7 +7,9 @@
 
 #include <sogl/sogl.hpp>
 
+#include <map>
 #include <vector>
+#include <string>
 
 class App {
 public:
@@ -22,7 +24,8 @@ private:
 
     sogl::Window m_window;
     sogl::Shader m_shader;
-    std::vector<Layer> m_layers;
+    std::map<std::string, std::vector<Layer>> m_worlds;
+    std::map<std::string, bool> m_worlds_select;
     Camera2D m_camera;
     glm::vec<3, float> m_clear_color;
 

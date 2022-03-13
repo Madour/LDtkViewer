@@ -31,9 +31,12 @@ void App::run() {
         m_shader.setUniform("transform", m_camera.getTransform());
         m_shader.setUniform("opacity", 1.f);
 
-        for (auto& layer : m_layers) {
-            m_shader.setUniform("texture_size", glm::vec2(layer.getTexture().getSize()));
-            layer.render();
+        for (auto& [name, layers] : m_worlds) {
+            if (m_worlds_select[name])
+                for (auto& layer : layers) {
+                    m_shader.setUniform("texture_size", glm::vec2(layer.getTexture().getSize()));
+                    layer.render();
+                }
         }
 
         renderImGui();
@@ -104,16 +107,19 @@ bool App::loadLDtkFile(const char* path) {
         std::cout << ex.what() << std::endl;
         return false;
     }
-
+    auto world_name = world.getFilePath().filename();
     auto& bg = world.getBgColor();
+
     m_clear_color = {bg.r/255.f, bg.g/255.f, bg.b/255.f};
 
     TextureManager::clear();
-    m_layers.clear();
+    m_worlds.clear();
+    m_worlds[world_name].reserve(world.allLevels().size()*world.allLevels()[0].allLayers().size());
+    m_worlds_select[world_name] = true;
     for (const auto& level : world.allLevels()) {
         for (const auto& layer : level.allLayers()) {
             if (!layer.allTiles().empty())
-                m_layers.emplace(m_layers.begin(), layer);
+                m_worlds.at(world_name).emplace(m_worlds.at(world_name).begin(), layer);
         }
     }
     return true;
@@ -152,6 +158,22 @@ void App::renderImGui() {
         ImGui::Text("counter = %d", counter);
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::End();
+    }
+    {
+        ImGui::SetNextWindowSize({(float)m_window.getSize().x-200.f, 20.});
+        ImGui::SetNextWindowPos({200.f, 0});
+        ImGui::Begin("Full", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration);
+        ImGui::BeginTabBar("WorldsSelector", ImGuiTabBarFlags_NoCloseWithMiddleMouseButton);
+        for (auto& [name, _] : m_worlds) {
+            if (ImGui::BeginTabItem(name.c_str())) {
+                m_worlds_select[name] = true;
+                ImGui::EndTabItem();
+            } else {
+                m_worlds_select[name] = false;
+            }
+        }
+        ImGui::EndTabBar();
         ImGui::End();
     }
     {
