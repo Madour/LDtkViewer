@@ -40,6 +40,7 @@ private:
         uniform vec2 window_size = vec2(0.0, 0.0);
         uniform vec2 texture_size = vec2(0.0, 0.0);
         uniform vec3 transform = vec3(0.0, 0.0, 1.0);
+        uniform vec2 offset = vec2(0.0, 0.0);
 
         layout (location = 0) in vec2 i_pos;
         layout (location = 1) in vec2 i_tex;
@@ -58,6 +59,7 @@ private:
             // apply camera transform
             pos.xy += transform.xy;
             pos.xy *= 2*transform.z;
+            pos.xy += offset.xy / window_size.xy;
 
             tex.xy = i_tex.xy;
             if (texture_size.xy != vec2(0, 0))

@@ -11,6 +11,9 @@
 
 #include <filesystem>
 
+constexpr float PANEL_WIDTH = 200.f;
+constexpr float BAR_HEIGHT = 30.f;
+
 App::App() : m_window(1280, 720, "LDtk World Viewer") {
     m_projects_data.insert({"", {}});
     m_shader.load(vert_shader, frag_shader);
@@ -39,6 +42,7 @@ void App::run() {
 
         m_shader.bind();
         m_shader.setUniform("window_size", glm::vec2(m_window.getSize()));
+        m_shader.setUniform("offset", glm::vec2(PANEL_WIDTH, BAR_HEIGHT));
 
         if (!m_selected_project.empty()) {
             const int active_depth = getActiveDepth();
@@ -47,7 +51,7 @@ void App::run() {
                 for (const auto& [depth, levels] : world.levels) {
                     if (depth > active_depth)
                         continue;
-                    float opacity = 0.5f - std::abs(active_depth - depth)/4.f;
+                    float opacity = 0.5f - std::abs(active_depth - depth)/8.f;
                     m_shader.setUniform("opacity", depth == active_depth ? 1.f : opacity);
                     for (const auto& level : levels) {
                         for (const auto& layer : level.layers)
@@ -148,40 +152,23 @@ void App::initImGui() {
     ImGui_ImplGlfw_InitForOpenGL(&m_window, true);
     ImGui_ImplOpenGL3_Init("#version 330 core");
     ImGui::GetStyle().WindowBorderSize = 0.f;
+    ImGui::GetStyle().SelectableTextAlign = {0.5f, 0.5f};
+    // ImGui::GetStyle().ScaleAllSizes(1.f);
 }
 
 void App::renderImGui() {
-    static bool show_demo_window = false;
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+
+    static bool show_demo_window = false;
     if (show_demo_window)
         ImGui::ShowDemoWindow(&show_demo_window);
     {
-        static float f = 0.0f;
-        static float color[3];
-        static int counter = 0;
-
-        ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-        ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-        ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-
-        ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-        ImGui::ColorEdit3("clear color", color);                // Edit 3 floats representing a color
-
-        if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-            counter++;
-        ImGui::SameLine();
-        ImGui::Text("counter = %d", counter);
-
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-        ImGui::End();
-    }
-    {
         static std::map<std::string, bool> worlds_tabs;
-        ImGui::SetNextWindowSize({(float)m_window.getSize().x-200.f, 20.});
-        ImGui::SetNextWindowPos({200.f, 0});
+        ImGui::GetStyle().WindowPadding = {0.f, 10.f};
+        ImGui::SetNextWindowSize({(float)m_window.getSize().x-PANEL_WIDTH, BAR_HEIGHT});
+        ImGui::SetNextWindowPos({PANEL_WIDTH, 0});
         ImGui::Begin("Full", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration
                                     | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
         ImGui::BeginTabBar("WorldsSelector");
@@ -201,15 +188,36 @@ void App::renderImGui() {
                 m_selected_project.clear();
             }
         }
-
         ImGui::EndTabBar();
         ImGui::End();
     }
     {
-        ImGui::SetNextWindowSize({200.f, (float)m_window.getSize().y});
+        ImGui::GetStyle().WindowPadding = {0.f, 0.f};
+        ImGui::SetNextWindowSize({PANEL_WIDTH, (float)m_window.getSize().y});
         ImGui::SetNextWindowPos({0, 0});
         ImGui::Begin("Main", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration);
-        ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+
+        // Software Title + version
+        ImGui::Pad(0, 20);
+        ImGui::TextCentered("LDtk Viewer v0.1");
+
+        // Current world levels
+        if (!m_selected_project.empty()) {
+            ImGui::Pad(15, 30);
+            ImGui::Text("Levels");
+            ImGui::BeginListBox("Levels", {PANEL_WIDTH, 0});
+            for (const auto& level : getActiveProject().worlds[0].levels.at(getActiveDepth())) {
+                if (ImGui::Selectable(level.name.c_str(), false)) {
+                    auto level_center = level.bounds.pos + level.bounds.size / 2.f;
+                    getActiveCamera().centerOn(level_center.x, level_center.y);
+                }
+            }
+            ImGui::EndListBox();
+        }
+
+        // demo window
+        ImGui::Pad(15, 30);
+        ImGui::Checkbox("Demo Window", &show_demo_window);
         ImGui::End();
     }
     ImGui::Render();
