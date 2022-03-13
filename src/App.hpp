@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "Camera2D.hpp"
 #include "LDtkProject.hpp"
+#include "LDtkProjectData.hpp"
 
 #include <sogl/sogl.hpp>
 
@@ -22,6 +22,7 @@ private:
 
     LDtkProject& getActiveProject();
     Camera2D& getActiveCamera();
+    int getActiveDepth();
 
     void initImGui();
     void renderImGui();
@@ -31,7 +32,7 @@ private:
 
     std::string m_selected_project;
     std::map<std::string, LDtkProject> m_projects;
-    std::map<std::string, Camera2D> m_cameras;
+    std::map<std::string, LDtkProjectData> m_projects_data;
 
     LDtkProject m_dummy_project;
 

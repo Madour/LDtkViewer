@@ -10,6 +10,7 @@
 #include <LDtkLoader/Level.hpp>
 #include <LDtkLoader/World.hpp>
 
+#include <map>
 #include <vector>
 
 class LDtkProject {
@@ -27,12 +28,13 @@ public:
 
             explicit Level(const ldtk::Level& level);
             std::string name;
+            int depth;
             std::vector<Layer> layers;
         };
 
         explicit World(const ldtk::World& world);
         std::string name;
-        std::vector<Level> levels;
+        std::map<int, std::vector<Level>> levels;
     };
 
     bool load(const char* path);

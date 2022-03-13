@@ -12,7 +12,7 @@
 #include <filesystem>
 
 App::App() : m_window(1280, 720, "LDtk World Viewer") {
-    m_cameras.insert({"", {}});
+    m_projects_data.insert({"", {}});
     m_shader.load(vert_shader, frag_shader);
     initImGui();
 }
@@ -21,8 +21,8 @@ bool App::loadLDtkFile(const char* path) {
     m_projects.insert({path, {}});
     m_projects[path].load(path);
 
-    m_cameras.insert({path, {}});
-    m_cameras[path].setSize(m_window.getSize());
+    m_projects_data.insert({path, {}});
+    m_projects_data[path].camera.setSize(m_window.getSize());
     return true;
 }
 
@@ -39,14 +39,22 @@ void App::run() {
 
         m_shader.bind();
         m_shader.setUniform("window_size", glm::vec2(m_window.getSize()));
-        m_shader.setUniform("opacity", 1.f);
 
         if (!m_selected_project.empty()) {
+            const int active_depth = getActiveDepth();
             m_shader.setUniform("transform", getActiveCamera().getTransform());
-            for (const auto& world : getActiveProject().worlds)
-                for (const auto& level : world.levels)
-                    for (const auto& layer : level.layers)
-                        layer.render(m_shader);
+            for (const auto& world : getActiveProject().worlds) {
+                for (const auto& [depth, levels] : world.levels) {
+                    if (depth > active_depth)
+                        continue;
+                    float opacity = 0.5f - std::abs(active_depth - depth)/4.f;
+                    m_shader.setUniform("opacity", depth == active_depth ? 1.f : opacity);
+                    for (const auto& level : levels) {
+                        for (const auto& layer : level.layers)
+                            layer.render(m_shader);
+                    }
+                }
+            }
         }
 
         renderImGui();
@@ -60,8 +68,8 @@ void App::processEvent(sogl::Event& event) {
     static glm::vec<2, int> grab_pos;
 
     if (auto resize = event.as<sogl::Event::Resize>()) {
-        for (auto& [_, camera] : m_cameras)
-            camera.setSize({resize->width, resize->height});
+        for (auto& [_, data] : m_projects_data)
+            data.camera.setSize({resize->width, resize->height});
     }
     else if (auto drop = event.as<sogl::Event::Drop>()) {
         for (auto& file : drop->files)
@@ -88,6 +96,13 @@ void App::processEvent(sogl::Event& event) {
                     grab_pos = m_window.getMousePosition();
                 } else if (btn->action == GLFW_RELEASE) {
                     camera_grabbed = false;
+                }
+            } else if (btn->button == GLFW_MOUSE_BUTTON_RIGHT) {
+                if (btn-> action == GLFW_PRESS) {
+                    auto& active_project_levels = getActiveProject().worlds[0].levels;
+                    auto depth_offset = active_project_levels.begin()->first;
+                    auto depth = getActiveDepth() - depth_offset;
+                    m_projects_data[m_selected_project].depth = (depth % active_project_levels.size()) + depth_offset;
                 }
             }
         }
@@ -120,7 +135,11 @@ LDtkProject& App::getActiveProject() {
 }
 
 Camera2D& App::getActiveCamera() {
-    return m_cameras.at(m_selected_project);
+    return m_projects_data.at(m_selected_project).camera;
+}
+
+int App::getActiveDepth() {
+    return m_projects_data.at(m_selected_project).depth;
 }
 
 void App::initImGui() {
@@ -178,7 +197,7 @@ void App::renderImGui() {
         for (auto& [name, open] : worlds_tabs) {
             if (!open) {
                 m_projects.erase(name);
-                m_cameras.erase(name);
+                m_projects_data.erase(name);
                 m_selected_project.clear();
             }
         }

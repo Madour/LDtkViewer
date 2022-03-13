@@ -21,15 +21,14 @@ bool LDtkProject::load(const char* path) {
 
 LDtkProject::World::World(const ldtk::World& world) {
     name = world.getFilePath().filename().substr(0, world.getFilePath().filename().find('.'));
-
-    levels.reserve(world.allLevels().size());
     for (const auto& level : world.allLevels()) {
-        levels.emplace_back(level);
+        levels[level.depth].emplace_back(level);
     }
 }
 
 LDtkProject::World::Level::Level(const ldtk::Level& level) {
     name = level.name;
+    depth = level.depth;
     layers.reserve(level.allLayers().size());
     for (const auto& layer : level.allLayers()) {
         if (!layer.allTiles().empty())
