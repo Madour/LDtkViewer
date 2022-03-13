@@ -29,6 +29,10 @@ LDtkProject::World::World(const ldtk::World& world) {
 LDtkProject::World::Level::Level(const ldtk::Level& level) {
     name = level.name;
     depth = level.depth;
+    bounds.pos.x = level.position.x;
+    bounds.pos.y = level.position.y;
+    bounds.size.x = level.size.x;
+    bounds.size.y = level.size.y;
     layers.reserve(level.allLayers().size());
     for (const auto& layer : level.allLayers()) {
         if (!layer.allTiles().empty())

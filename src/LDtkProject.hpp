@@ -13,6 +13,11 @@
 #include <map>
 #include <vector>
 
+struct Rect {
+    glm::vec2 pos;
+    glm::vec2 size;
+};
+
 class LDtkProject {
 public:
     struct World {
@@ -29,6 +34,7 @@ public:
             explicit Level(const ldtk::Level& level);
             std::string name;
             int depth;
+            Rect bounds;
             std::vector<Layer> layers;
         };
 
