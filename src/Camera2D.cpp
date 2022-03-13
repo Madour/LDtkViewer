@@ -33,7 +33,11 @@ void Camera2D::centerOn(float x, float y) {
 }
 
 glm::vec2 Camera2D::getCenter() const {
-    return {m_transform.x, m_transform.y};
+    return {-m_transform.x, -m_transform.y};
+}
+
+void Camera2D::setZoom(float zoom) {
+    m_transform.z = zoom;
 }
 
 float Camera2D::getZoom() const {
@@ -48,6 +52,15 @@ constexpr T pow(T n, unsigned p) {
 template <unsigned precision>
 constexpr float round(float val) {
     return std::floor(val * pow(10, precision)) / pow(10, precision);
+}
+
+glm::vec2 Camera2D::applyTransform(const glm::vec2 point) const {
+    auto res = point;
+    res.x -= (m_transform.x + m_offset.x) * m_transform.z;
+    res.y -= (m_transform.y + m_offset.y) * m_transform.z;
+    res /= m_transform.z;
+
+    return res;
 }
 
 glm::vec3 Camera2D::getTransform() const {

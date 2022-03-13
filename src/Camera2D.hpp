@@ -15,10 +15,12 @@ public:
     void zoom(float z);
 
     void centerOn(float x, float y);
-
     glm::vec2 getCenter() const;
+
+    void setZoom(float zoom);
     float getZoom() const;
 
+    glm::vec2 applyTransform(const glm::vec2 point) const;
     glm::vec3 getTransform() const;
 
 private:
