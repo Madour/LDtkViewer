@@ -201,7 +201,7 @@ void App::renderImGui() {
         ImGui::SetNextWindowPos({PANEL_WIDTH, 0});
         ImGui::Begin("Full", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration
                                     | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
-        ImGui::BeginTabBar("WorldsSelector");
+        ImGui::BeginTabBar("WorldsSelector", ImGuiTabBarFlags_AutoSelectNewTabs);
         worlds_tabs.clear();
         for (auto& [name, _] : m_projects) {
             worlds_tabs[name] = true;
