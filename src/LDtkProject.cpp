@@ -3,19 +3,19 @@
 #include "LDtkProject.hpp"
 #include "TextureManager.hpp"
 
-bool LDtkProject::load(const char* path) {
-    ldtk::World world;
+ldtk::World* LDtkProject::load(const char* path) {
+    auto* world = new ldtk::World();
     try {
-        world.loadFromFile(path);
+        world->loadFromFile(path);
     } catch(std::exception& ex) {
         std::cout << ex.what() << std::endl;
-        return false;
+        return nullptr;
     }
-    name = world.getFilePath().filename();
-    auto& bg = world.getBgColor();
+    name = world->getFilePath().filename();
+    auto& bg = world->getBgColor();
     bg_color = {bg.r/255.f, bg.g/255.f, bg.b/255.f};
-    worlds.emplace_back(world);
-    return true;
+    worlds.emplace_back(*world);
+    return world;
 }
 
 

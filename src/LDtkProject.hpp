@@ -43,7 +43,7 @@ public:
         std::map<int, std::vector<Level>> levels;
     };
 
-    bool load(const char* path);
+    ldtk::World* load(const char* path);
     std::string name;
     glm::vec3 bg_color = {0, 0, 0};
     std::vector<World> worlds;
