@@ -22,11 +22,14 @@ App::App() : m_window(1280, 720, "LDtk World Viewer") {
 
 bool App::loadLDtkFile(const char* path) {
     m_projects.insert({path, {}});
-    m_projects[path].load(path);
-
-    m_projects_vars.insert({path, {}});
-    m_projects_vars[path].camera.setSize(m_window.getSize());
-    return true;
+    if (m_projects[path].load(path)) {
+        m_projects_vars.insert({path, {}});
+        m_projects_vars[path].camera.setSize(m_window.getSize());
+        return true;
+    } else {
+        m_projects.erase(path);
+        return false;
+    }
 }
 
 void App::run() {
