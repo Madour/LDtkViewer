@@ -28,7 +28,7 @@ public:
                 std::string name;
             private:
                 sogl::VertexArray m_va;
-                sogl::Texture* m_texture;
+                sogl::Texture* m_texture = nullptr;
             };
 
             explicit Level(const ldtk::Level& level);

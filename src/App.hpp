@@ -66,10 +66,10 @@ private:
             pos.xy += offset.xy / window_size.xy;
 
             tex.xy = i_tex.xy;
-            if (texture_size.xy != vec2(0, 0))
+            if (tex.xy != vec2(-1., -1.) && texture_size.xy != vec2(0, 0))
                 tex.xy /= texture_size.xy;
             else
-                tex.xy = vec2(-1, -1);
+                tex.xy = vec2(-1., -1.);
 
             col = i_col;
 
