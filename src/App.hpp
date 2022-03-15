@@ -78,7 +78,7 @@ private:
     );
     static constexpr auto frag_shader = GLSL(330 core,
         uniform sampler2D texture0;
-        uniform float opacity;
+        uniform vec4 color = vec4(1.f, 1.f, 1.f, 1.f);
 
         in vec2 pos;
         in vec2 tex;
@@ -91,7 +91,7 @@ private:
             if (tex.xy != vec2(-1, -1))
                 tex_color = texture(texture0, tex);
 
-            gl_FragColor = vec4(tex_color.rgb * col.rgb, tex_color.a * opacity * col.a);
+            gl_FragColor = col * tex_color * color;
         }
     );
 };

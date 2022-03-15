@@ -64,14 +64,14 @@ void App::run() {
                             if (mouse_pos.x >= level.bounds.pos.x && mouse_pos.y >= level.bounds.pos.y
                              && mouse_pos.x < level.bounds.pos.x + level.bounds.size.x
                              && mouse_pos.y < level.bounds.pos.y + level.bounds.size.y) {
-                                m_shader.setUniform("opacity", 1.f);
+                                m_shader.setUniform("color", glm::vec4(1.f, 1.f, 1.f, 1.f));
                             } else if (active_camera.getCenter() == glm::vec2(level.bounds.pos + level.bounds.size / 2.f)) {
-                                m_shader.setUniform("opacity", 1.f);
+                                m_shader.setUniform("color", glm::vec4(1.f, 1.f, 1.f, 1.f));
                             } else {
-                                m_shader.setUniform("opacity", 0.8f);
+                                m_shader.setUniform("color", glm::vec4(0.9f, 0.9f, 0.9f, 1.f));
                             }
                         } else {
-                            m_shader.setUniform("opacity", 0.5f - std::abs(active_depth - depth)/6.f);
+                            m_shader.setUniform("color", glm::vec4(0.8f, 0.8f, 0.8f, 0.5f - std::abs(active_depth - depth)/6.f));
                         }
                         for (const auto& layer : level.layers)
                             layer.render(m_shader);
