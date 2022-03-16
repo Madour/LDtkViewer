@@ -45,54 +45,16 @@ void App::unloadLDtkFile(const char* path) {
 }
 
 void App::run() {
-    const glm::vec2 OFFSET = {PANEL_WIDTH, BAR_HEIGHT};
-
     while (m_window.isOpen()) {
         while (auto event = m_window.nextEvent()) {
             processEvent(event.value());
         }
 
-        if (m_selected_project.empty())
-            m_window.clear({54.f/255.f, 60.f/255.f, 69.f/255.f});
-        else
-            m_window.clear(getActiveProject().bg_color);
-
         if (projectOpened()) {
-            const auto& active_project = getActiveProject();
-            const auto& active_camera = getActiveCamera();
-            const auto active_depth = getActiveDepth();
-
-            m_shader.bind();
-            m_shader.setUniform("window_size", glm::vec2(m_window.getSize()));
-            m_shader.setUniform("offset", OFFSET);
-            m_shader.setUniform("transform", getActiveCamera().getTransform());
-
-            for (const auto& world : active_project.worlds) {
-                for (const auto& [depth, levels] : world.levels) {
-                    if (depth > active_depth)
-                        continue;
-                    for (const auto& level : levels) {
-                        if (depth == active_depth) {
-                            auto window_size = glm::vec2(m_window.getSize());
-                            auto mouse_pos = active_camera.applyTransform(glm::vec2(m_window.getMousePosition()) - OFFSET/2.f - window_size/2.f);
-
-                            if (mouse_pos.x >= level.bounds.pos.x && mouse_pos.y >= level.bounds.pos.y
-                             && mouse_pos.x < level.bounds.pos.x + level.bounds.size.x
-                             && mouse_pos.y < level.bounds.pos.y + level.bounds.size.y) {
-                                m_shader.setUniform("color", glm::vec4(1.f, 1.f, 1.f, 1.f));
-                            } else if (active_camera.getCenter() == glm::vec2(level.bounds.pos + level.bounds.size / 2.f)) {
-                                m_shader.setUniform("color", glm::vec4(1.f, 1.f, 1.f, 1.f));
-                            } else {
-                                m_shader.setUniform("color", glm::vec4(0.9f, 0.9f, 0.9f, 1.f));
-                            }
-                        } else {
-                            m_shader.setUniform("color", glm::vec4(0.8f, 0.8f, 0.8f, 0.5f - std::abs(active_depth - depth)/6.f));
-                        }
-                        for (const auto& layer : level.layers)
-                            layer.render(m_shader);
-                    }
-                }
-            }
+            m_window.clear(getActiveProject().bg_color);
+            renderActiveProject();
+        } else {
+            m_window.clear({54.f/255.f, 60.f/255.f, 69.f/255.f});
         }
 
         renderImGui();
@@ -196,6 +158,46 @@ void App::processEvent(sogl::Event& event) {
                 camera.zoom(0.9f);
             } else if (scroll->dy > 0) {
                 camera.zoom(1.1f);
+            }
+        }
+    }
+}
+
+void App::renderActiveProject() {
+    static const glm::vec2 OFFSET = {PANEL_WIDTH, BAR_HEIGHT};
+
+    const auto& active_project = getActiveProject();
+    const auto& active_camera = getActiveCamera();
+    const auto active_depth = getActiveDepth();
+
+    m_shader.bind();
+    m_shader.setUniform("window_size", glm::vec2(m_window.getSize()));
+    m_shader.setUniform("offset", OFFSET);
+    m_shader.setUniform("transform", getActiveCamera().getTransform());
+
+    for (const auto& world : active_project.worlds) {
+        for (const auto& [depth, levels] : world.levels) {
+            if (depth > active_depth)
+                continue;
+            for (const auto& level : levels) {
+                if (depth == active_depth) {
+                    auto window_size = glm::vec2(m_window.getSize());
+                    auto mouse_pos = active_camera.applyTransform(glm::vec2(m_window.getMousePosition()) - OFFSET/2.f - window_size/2.f);
+
+                    if (mouse_pos.x >= level.bounds.pos.x && mouse_pos.y >= level.bounds.pos.y
+                        && mouse_pos.x < level.bounds.pos.x + level.bounds.size.x
+                        && mouse_pos.y < level.bounds.pos.y + level.bounds.size.y) {
+                        m_shader.setUniform("color", glm::vec4(1.f, 1.f, 1.f, 1.f));
+                    } else if (active_camera.getCenter() == glm::vec2(level.bounds.pos + level.bounds.size / 2.f)) {
+                        m_shader.setUniform("color", glm::vec4(1.f, 1.f, 1.f, 1.f));
+                    } else {
+                        m_shader.setUniform("color", glm::vec4(0.9f, 0.9f, 0.9f, 1.f));
+                    }
+                } else {
+                    m_shader.setUniform("color", glm::vec4(0.8f, 0.8f, 0.8f, 0.5f - std::abs(active_depth - depth)/6.f));
+                }
+                for (const auto& layer : level.layers)
+                    layer.render(m_shader);
             }
         }
     }

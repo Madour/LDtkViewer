@@ -33,6 +33,8 @@ public:
 private:
     void processEvent(sogl::Event& event);
 
+    void renderActiveProject();
+
     void initImGui();
     void renderImGui();
 
