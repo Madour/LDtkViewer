@@ -19,8 +19,10 @@ public:
     void unloadLDtkFile(const char* path);
 
     bool projectOpened();
+
     void refreshActiveProject();
     LDtkProject& getActiveProject();
+    ldtk::World& getActiveData();
     Camera2D& getActiveCamera();
 
     int getActiveDepth();

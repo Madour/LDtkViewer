@@ -122,6 +122,10 @@ LDtkProject& App::getActiveProject() {
     return m_projects.at(m_selected_project);
 }
 
+ldtk::World& App::getActiveData() {
+    return *m_projects_vars.at(m_selected_project).data;
+}
+
 Camera2D& App::getActiveCamera() {
     return m_projects_vars.at(m_selected_project).camera;
 }
