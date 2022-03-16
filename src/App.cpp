@@ -15,7 +15,7 @@ constexpr float PANEL_WIDTH = 200.f;
 constexpr float BAR_HEIGHT = 30.f;
 
 App::App() : m_window(1280, 720, "LDtk World Viewer") {
-    m_projects_vars.insert({"", LDtkProjectVariables{}});
+    m_projects_vars.emplace("", LDtkProjectVariables{});
     m_shader.load(vert_shader, frag_shader);
     initImGui();
 }
@@ -23,7 +23,7 @@ App::App() : m_window(1280, 720, "LDtk World Viewer") {
 bool App::loadLDtkFile(const char* path) {
     m_projects.insert({path, {}});
     if (auto* world = m_projects[path].load(path)) {
-        m_projects_vars.insert({path, LDtkProjectVariables{}});
+        m_projects_vars.emplace(path, LDtkProjectVariables{});
         m_projects_vars[path].camera.setSize(m_window.getSize());
         m_projects_vars[path].data.reset(world);
         return true;
