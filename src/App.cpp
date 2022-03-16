@@ -21,6 +21,9 @@ App::App() : m_window(1280, 720, "LDtk World Viewer") {
 }
 
 bool App::loadLDtkFile(const char* path) {
+    if (m_projects.count(path) > 0) {
+        unloadLDtkFile(path);
+    }
     m_projects.insert({path, {}});
     if (auto* world = m_projects[path].load(path)) {
         m_projects_vars.emplace(path, LDtkProjectVariables{});
@@ -30,6 +33,14 @@ bool App::loadLDtkFile(const char* path) {
     } else {
         m_projects.erase(path);
         return false;
+    }
+}
+
+void App::unloadLDtkFile(const char* path) {
+    if (m_projects.count(path)) {
+        m_projects.erase(path);
+        m_projects_vars.erase(path);
+        m_selected_project.clear();
     }
 }
 
@@ -102,33 +113,33 @@ void App::processEvent(sogl::Event& event) {
         for (auto& file : drop->files)
             loadLDtkFile(file.c_str());
     }
-    else if (auto key = event.as<sogl::Event::Key>()) {
+    else if (auto press = event.as<sogl::Event::KeyPress>()) {
         if (!ImGui::GetIO().WantCaptureKeyboard) {
-            if (key->action == GLFW_PRESS) {
-                switch (key->key) {
-                    case GLFW_KEY_ESCAPE:
-                        m_window.close();
-                        break;
-                    default:
-                        break;
+            if (press->key == GLFW_KEY_ESCAPE) {
+                m_window.close();
+            } else if (press->key == GLFW_KEY_F5) {
+                if (projectOpened()) {
+                    const auto path = m_selected_project;
+                    unloadLDtkFile(path.c_str());
+                    loadLDtkFile(path.c_str());
                 }
             }
         }
     }
-    else if (auto btn = event.as<sogl::Event::MouseButton>()) {
+    else if (auto mouse_press = event.as<sogl::Event::MousePress>()) {
         if (!ImGui::GetIO().WantCaptureMouse) {
-            if (btn->button == GLFW_MOUSE_BUTTON_LEFT) {
-                if (btn->action == GLFW_PRESS) {
-                    camera_grabbed = true;
-                    grab_pos = m_window.getMousePosition();
-                } else if (btn->action == GLFW_RELEASE) {
-                    camera_grabbed = false;
-                }
-            } else if (btn->button == GLFW_MOUSE_BUTTON_RIGHT) {
-                if (btn-> action == GLFW_PRESS) {
+            if (mouse_press->button == GLFW_MOUSE_BUTTON_LEFT) {
+                camera_grabbed = true;
+                grab_pos = m_window.getMousePosition();
+            } else if (mouse_press->button == GLFW_MOUSE_BUTTON_RIGHT) {
+                if (projectOpened())
                     setActiveDepth(getActiveDepth()+1);
-                }
             }
+        }
+    }
+    else if (auto mouse_release = event.as<sogl::Event::MouseRelease>()) {
+        if (mouse_release->button == GLFW_MOUSE_BUTTON_LEFT) {
+            camera_grabbed = false;
         }
     }
     else if (auto move = event.as<sogl::Event::MouseMove>()) {
@@ -204,19 +215,17 @@ void App::renderImGui() {
                                     | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
         ImGui::BeginTabBar("WorldsSelector", ImGuiTabBarFlags_AutoSelectNewTabs);
         worlds_tabs.clear();
-        for (auto& [name, _] : m_projects) {
-            worlds_tabs[name] = true;
-            auto filename = std::filesystem::path(name).filename().string();
-            if (ImGui::BeginTabItem(filename.c_str(), &worlds_tabs[name])) {
-                m_selected_project = name;
+        for (auto& [path, _] : m_projects) {
+            worlds_tabs[path] = true;
+            auto filename = std::filesystem::path(path).filename().string();
+            if (ImGui::BeginTabItem(filename.c_str(), &worlds_tabs[path])) {
+                m_selected_project = path;
                 ImGui::EndTabItem();
             }
         }
-        for (auto& [name, open] : worlds_tabs) {
+        for (auto& [path, open] : worlds_tabs) {
             if (!open) {
-                m_projects.erase(name);
-                m_projects_vars.erase(name);
-                m_selected_project.clear();
+                unloadLDtkFile(path.c_str());
             }
         }
         ImGui::EndTabBar();

@@ -15,6 +15,7 @@ class App {
 public:
     App();
     bool loadLDtkFile(const char* path);
+    void unloadLDtkFile(const char* path);
     void run();
 
 private:
