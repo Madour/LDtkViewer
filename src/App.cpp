@@ -101,6 +101,42 @@ void App::run() {
     }
 }
 
+bool App::projectOpened() {
+    return !m_selected_project.empty();
+}
+
+void App::refreshActiveProject() {
+    const auto path = m_selected_project;
+    const auto cam = getActiveCamera();
+    const auto depth = getActiveDepth();
+    unloadLDtkFile(path.c_str());
+    loadLDtkFile(path.c_str());
+    m_selected_project = path;
+    getActiveCamera() = cam;
+    setActiveDepth(depth);
+}
+
+LDtkProject& App::getActiveProject() {
+    if (m_selected_project.empty())
+        return m_dummy_project;
+    return m_projects.at(m_selected_project);
+}
+
+Camera2D& App::getActiveCamera() {
+    return m_projects_vars.at(m_selected_project).camera;
+}
+
+int App::getActiveDepth() {
+    return m_projects_vars.at(m_selected_project).depth;
+}
+
+void App::setActiveDepth(int depth) {
+    auto& active_project_levels = getActiveProject().worlds[0].levels;
+    auto depth_offset = active_project_levels.begin()->first;
+    depth -= depth_offset;
+    m_projects_vars[m_selected_project].depth = (depth % active_project_levels.size()) + depth_offset;
+}
+
 void App::processEvent(sogl::Event& event) {
     static bool camera_grabbed = false;
     static glm::vec<2, int> grab_pos;
@@ -119,9 +155,7 @@ void App::processEvent(sogl::Event& event) {
                 m_window.close();
             } else if (press->key == GLFW_KEY_F5) {
                 if (projectOpened()) {
-                    const auto path = m_selected_project;
-                    unloadLDtkFile(path.c_str());
-                    loadLDtkFile(path.c_str());
+                    refreshActiveProject();
                 }
             }
         }
@@ -161,31 +195,6 @@ void App::processEvent(sogl::Event& event) {
             }
         }
     }
-}
-
-bool App::projectOpened() {
-    return !m_selected_project.empty();
-}
-
-LDtkProject& App::getActiveProject() {
-    if (m_selected_project.empty())
-        return m_dummy_project;
-    return m_projects.at(m_selected_project);
-}
-
-Camera2D& App::getActiveCamera() {
-    return m_projects_vars.at(m_selected_project).camera;
-}
-
-int App::getActiveDepth() {
-    return m_projects_vars.at(m_selected_project).depth;
-}
-
-void App::setActiveDepth(int depth) {
-    auto& active_project_levels = getActiveProject().worlds[0].levels;
-    auto depth_offset = active_project_levels.begin()->first;
-    depth -= depth_offset;
-    m_projects_vars[m_selected_project].depth = (depth % active_project_levels.size()) + depth_offset;
 }
 
 void App::initImGui() {

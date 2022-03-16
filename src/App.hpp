@@ -5,6 +5,7 @@
 #include "LDtkProject.hpp"
 #include "LDtkProjectVariables.hpp"
 
+#include <LDtkLoader/World.hpp>
 #include <sogl/sogl.hpp>
 
 #include <map>
@@ -16,18 +17,19 @@ public:
     App();
     bool loadLDtkFile(const char* path);
     void unloadLDtkFile(const char* path);
-    void run();
-
-private:
-    void processEvent(sogl::Event& event);
 
     bool projectOpened();
-
+    void refreshActiveProject();
     LDtkProject& getActiveProject();
     Camera2D& getActiveCamera();
 
     int getActiveDepth();
     void setActiveDepth(int depth);
+
+    void run();
+
+private:
+    void processEvent(sogl::Event& event);
 
     void initImGui();
     void renderImGui();
