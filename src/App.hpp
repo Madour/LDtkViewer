@@ -45,7 +45,8 @@ private:
     std::map<std::string, LDtkProject> m_projects;
     std::map<std::string, LDtkProjectVariables> m_projects_vars;
 
-    LDtkProject m_dummy_project;
+    std::string m_selected_project;
+    std::string m_focused_level;
 
     static constexpr auto vert_shader = GLSL(330 core,
         uniform vec2 window_size = vec2(0.0, 0.0);

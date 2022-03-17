@@ -29,6 +29,8 @@ bool App::loadLDtkFile(const char* path) {
         m_projects_vars.emplace(path, LDtkProjectVariables{});
         m_projects_vars[path].camera.setSize(m_window.getSize());
         m_projects_vars[path].data.reset(world);
+        m_selected_project = path;
+        m_focused_level = m_projects[path].worlds[0].levels[0][0].name;
         return true;
     } else {
         m_projects.erase(path);
@@ -41,6 +43,7 @@ void App::unloadLDtkFile(const char* path) {
         m_projects.erase(path);
         m_projects_vars.erase(path);
         m_selected_project.clear();
+        m_focused_level.clear();
     }
 }
 
@@ -73,14 +76,11 @@ void App::refreshActiveProject() {
     const auto depth = getActiveDepth();
     unloadLDtkFile(path.c_str());
     loadLDtkFile(path.c_str());
-    m_selected_project = path;
     getActiveCamera() = cam;
     setActiveDepth(depth);
 }
 
-LDtkProject& App::getActiveProject() {
-    if (m_selected_project.empty())
-        return m_dummy_project;
+LDtkProjectDrawable& App::getActiveProject() {
     return m_projects.at(m_selected_project);
 }
 
@@ -262,9 +262,34 @@ void App::renderImGui() {
             ImGui::Text("Levels");
             ImGui::BeginListBox("Levels", {PANEL_WIDTH, 0});
             for (const auto& level : getActiveProject().worlds[0].levels.at(getActiveDepth())) {
-                if (ImGui::Selectable(level.name.c_str(), false)) {
+                if (ImGui::Selectable(level.name.c_str(), m_focused_level == level.name)) {
+                }
+                if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+                    m_focused_level = level.name;
                     auto level_center = level.bounds.pos + level.bounds.size / 2.f;
                     getActiveCamera().centerOn(level_center.x, level_center.y);
+                }
+            }
+            ImGui::EndListBox();
+
+            ImGui::Pad(15, 30);
+            ImGui::Text("Entities");
+            ImGui::BeginListBox("Entities", {PANEL_WIDTH, 0});
+
+            if (!m_focused_level.empty()) {
+                const auto& level = getActiveData().getLevel(m_focused_level);
+                for (const auto& layer : level.allLayers()) {
+                    for (const auto& entity : layer.allEntities()) {
+                        auto label = entity.getName() + "##" + entity.iid.c_str();
+                        if (ImGui::Selectable(label.c_str(), false)) {
+                            auto posx = entity.getPosition().x + level.position.x;
+                            auto posy = entity.getPosition().y + level.position.y;
+                            getActiveCamera().centerOn(posx, posy);
+                        }
+                        if (ImGui::IsItemHovered()) {
+                            ImGui::SetTooltip(entity.iid.c_str());
+                        }
+                    }
                 }
             }
             ImGui::EndListBox();
