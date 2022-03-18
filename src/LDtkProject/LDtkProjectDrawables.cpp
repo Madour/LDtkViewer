@@ -1,32 +1,16 @@
 // Created by Modar Nasser on 13/03/2022.
 
-#include "LDtkProject.hpp"
+#include "LDtkProjectDrawables.hpp"
 #include "TextureManager.hpp"
 
-ldtk::World* LDtkProject::load(const char* path) {
-    auto* world = new ldtk::World();
-    try {
-        world->loadFromFile(path);
-    } catch(std::exception& ex) {
-        std::cout << ex.what() << std::endl;
-        return nullptr;
-    }
-    name = world->getFilePath().filename();
-    auto& bg = world->getBgColor();
-    bg_color = {bg.r/255.f, bg.g/255.f, bg.b/255.f};
-    worlds.emplace_back(*world);
-    return world;
-}
-
-
-LDtkProject::World::World(const ldtk::World& world) {
+LDtkProjectDrawables::World::World(const ldtk::World& world) {
     name = world.getFilePath().filename().substr(0, world.getFilePath().filename().find('.'));
     for (const auto& level : world.allLevels()) {
         levels[level.depth].emplace_back(level);
     }
 }
 
-LDtkProject::World::Level::Level(const ldtk::Level& level) {
+LDtkProjectDrawables::World::Level::Level(const ldtk::Level& level) {
     name = level.name;
     depth = level.depth;
     bounds.pos.x = level.position.x;
@@ -39,7 +23,7 @@ LDtkProject::World::Level::Level(const ldtk::Level& level) {
     }
 }
 
-LDtkProject::World::Level::Layer::Layer(const ldtk::Layer& layer) {
+LDtkProjectDrawables::World::Level::Layer::Layer(const ldtk::Layer& layer) {
     name = layer.getName();
 
     if (!layer.allTiles().empty()) {
@@ -81,7 +65,7 @@ LDtkProject::World::Level::Layer::Layer(const ldtk::Layer& layer) {
     }
 }
 
-void LDtkProject::World::Level::Layer::render(sogl::Shader& shader) const {
+void LDtkProjectDrawables::World::Level::Layer::render(sogl::Shader& shader) const {
     if (m_texture != nullptr) {
         shader.setUniform("texture_size", glm::vec2(m_texture->getSize()));
         m_texture->bind();

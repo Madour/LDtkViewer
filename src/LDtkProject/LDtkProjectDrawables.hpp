@@ -18,7 +18,7 @@ struct Rect {
     glm::vec2 size;
 };
 
-class LDtkProject {
+class LDtkProjectDrawables {
 public:
     struct World {
         struct Level {
@@ -43,8 +43,6 @@ public:
         std::map<int, std::vector<Level>> levels;
     };
 
-    ldtk::World* load(const char* path);
     std::string name;
-    glm::vec3 bg_color = {0, 0, 0};
     std::vector<World> worlds;
 };

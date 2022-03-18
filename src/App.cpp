@@ -1,7 +1,8 @@
 // Created by Modar Nasser on 12/03/2022.
 
 #include "App.hpp"
-#include "TextureManager.hpp"
+
+#include "LDtkProject/ldtk2glm.hpp"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_glfw.h"
@@ -15,7 +16,7 @@ constexpr float PANEL_WIDTH = 200.f;
 constexpr float BAR_HEIGHT = 30.f;
 
 App::App() : m_window(1280, 720, "LDtk World Viewer") {
-    m_projects_vars.emplace("", LDtkProjectVariables{});
+    m_projects.emplace("", LDtkProject{});
     m_shader.load(vert_shader, frag_shader);
     initImGui();
 }
@@ -24,13 +25,10 @@ bool App::loadLDtkFile(const char* path) {
     if (m_projects.count(path) > 0) {
         unloadLDtkFile(path);
     }
-    m_projects.insert({path, {}});
-    if (auto* world = m_projects[path].load(path)) {
-        m_projects_vars.emplace(path, LDtkProjectVariables{});
-        m_projects_vars[path].camera.setSize(m_window.getSize());
-        m_projects_vars[path].data.reset(world);
+    m_projects.emplace(path, LDtkProject{});
+    if (m_projects[path].load(path)) {
+        m_projects[path].camera.setSize(m_window.getSize());
         m_selected_project = path;
-        m_focused_level = m_projects[path].worlds[0].levels[0][0].name;
         return true;
     } else {
         m_projects.erase(path);
@@ -41,9 +39,8 @@ bool App::loadLDtkFile(const char* path) {
 void App::unloadLDtkFile(const char* path) {
     if (m_projects.count(path)) {
         m_projects.erase(path);
-        m_projects_vars.erase(path);
+        m_projects.erase(path);
         m_selected_project.clear();
-        m_focused_level.clear();
     }
 }
 
@@ -54,7 +51,7 @@ void App::run() {
         }
 
         if (projectOpened()) {
-            m_window.clear(getActiveProject().bg_color);
+            m_window.clear(ldtk2glm(getActiveProject().ldtk_data->getBgColor()));
             renderActiveProject();
         } else {
             m_window.clear({54.f/255.f, 60.f/255.f, 69.f/255.f});
@@ -72,43 +69,37 @@ bool App::projectOpened() {
 
 void App::refreshActiveProject() {
     const auto path = m_selected_project;
-    const auto cam = getActiveCamera();
-    const auto depth = getActiveDepth();
+    const auto cam = getCamera();
+    const auto depth = getActiveProject().depth;
     unloadLDtkFile(path.c_str());
     loadLDtkFile(path.c_str());
-    getActiveCamera() = cam;
-    setActiveDepth(depth);
+    getCamera() = cam;
+    getActiveProject().depth = depth;
 }
 
-LDtkProjectDrawable& App::getActiveProject() {
+LDtkProject& App::getActiveProject() {
     return m_projects.at(m_selected_project);
 }
 
-ldtk::World& App::getActiveData() {
-    return *m_projects_vars.at(m_selected_project).data;
+Camera2D& App::getCamera() {
+    return m_projects.at(m_selected_project).camera;
 }
 
-Camera2D& App::getActiveCamera() {
-    return m_projects_vars.at(m_selected_project).camera;
-}
-
-int App::getActiveDepth() {
-    return m_projects_vars.at(m_selected_project).depth;
-}
-
+/*
 void App::setActiveDepth(int depth) {
     auto& active_project_levels = getActiveProject().worlds[0].levels;
     auto depth_offset = active_project_levels.begin()->first;
     depth -= depth_offset;
-    m_projects_vars[m_selected_project].depth = (depth % active_project_levels.size()) + depth_offset;
+    m_projects[m_selected_project].depth = (depth % active_project_levels.size()) + depth_offset;
 }
+*/
 
 void App::processEvent(sogl::Event& event) {
     static bool camera_grabbed = false;
     static glm::vec<2, int> grab_pos;
 
     if (auto resize = event.as<sogl::Event::Resize>()) {
-        for (auto& [_, data] : m_projects_vars)
+        for (auto& [_, data] : m_projects)
             data.camera.setSize({resize->width, resize->height});
     }
     else if (auto drop = event.as<sogl::Event::Drop>()) {
@@ -131,9 +122,6 @@ void App::processEvent(sogl::Event& event) {
             if (mouse_press->button == GLFW_MOUSE_BUTTON_LEFT) {
                 camera_grabbed = true;
                 grab_pos = m_window.getMousePosition();
-            } else if (mouse_press->button == GLFW_MOUSE_BUTTON_RIGHT) {
-                if (projectOpened())
-                    setActiveDepth(getActiveDepth()+1);
             }
         }
     }
@@ -144,7 +132,7 @@ void App::processEvent(sogl::Event& event) {
     }
     else if (auto move = event.as<sogl::Event::MouseMove>()) {
         if (camera_grabbed) {
-            auto& camera = getActiveCamera();
+            auto& camera = getCamera();
             auto dx = (grab_pos.x - move->x) / camera.getZoom();
             auto dy = (grab_pos.y - move->y) / camera.getZoom();
             grab_pos = {move->x, move->y};
@@ -153,7 +141,7 @@ void App::processEvent(sogl::Event& event) {
     }
     else if (auto scroll = event.as<sogl::Event::Scroll>()) {
         if (!ImGui::GetIO().WantCaptureMouse) {
-            auto& camera = getActiveCamera();
+            auto& camera = getCamera();
             if (scroll->dy < 0) {
                 camera.zoom(0.9f);
             } else if (scroll->dy > 0) {
@@ -167,34 +155,32 @@ void App::renderActiveProject() {
     static const glm::vec2 OFFSET = {PANEL_WIDTH, BAR_HEIGHT};
 
     const auto& active_project = getActiveProject();
-    const auto& active_camera = getActiveCamera();
-    const auto active_depth = getActiveDepth();
 
     m_shader.bind();
     m_shader.setUniform("window_size", glm::vec2(m_window.getSize()));
     m_shader.setUniform("offset", OFFSET);
-    m_shader.setUniform("transform", getActiveCamera().getTransform());
+    m_shader.setUniform("transform", getCamera().getTransform());
 
-    for (const auto& world : active_project.worlds) {
+    for (const auto& world : active_project.render_data->worlds) {
         for (const auto& [depth, levels] : world.levels) {
-            if (depth > active_depth)
+            if (depth > active_project.depth)
                 continue;
             for (const auto& level : levels) {
-                if (depth == active_depth) {
+                if (depth == active_project.depth) {
                     auto window_size = glm::vec2(m_window.getSize());
-                    auto mouse_pos = active_camera.applyTransform(glm::vec2(m_window.getMousePosition()) - OFFSET/2.f - window_size/2.f);
+                    auto mouse_pos = getCamera().applyTransform(glm::vec2(m_window.getMousePosition()) - OFFSET/2.f - window_size/2.f);
 
                     if (mouse_pos.x >= level.bounds.pos.x && mouse_pos.y >= level.bounds.pos.y
                         && mouse_pos.x < level.bounds.pos.x + level.bounds.size.x
                         && mouse_pos.y < level.bounds.pos.y + level.bounds.size.y) {
                         m_shader.setUniform("color", glm::vec4(1.f, 1.f, 1.f, 1.f));
-                    } else if (active_camera.getCenter() == glm::vec2(level.bounds.pos + level.bounds.size / 2.f)) {
+                    } else if (level.name == active_project.focused_level) {
                         m_shader.setUniform("color", glm::vec4(1.f, 1.f, 1.f, 1.f));
                     } else {
                         m_shader.setUniform("color", glm::vec4(0.9f, 0.9f, 0.9f, 1.f));
                     }
                 } else {
-                    m_shader.setUniform("color", glm::vec4(0.8f, 0.8f, 0.8f, 0.5f - std::abs(active_depth - depth)/6.f));
+                    m_shader.setUniform("color", glm::vec4(0.8f, 0.8f, 0.8f, 0.5f - std::abs(active_project.depth - depth)/6.f));
                 }
                 for (const auto& layer : level.layers)
                     layer.render(m_shader);
@@ -231,6 +217,8 @@ void App::renderImGui() {
         ImGui::BeginTabBar("WorldsSelector", ImGuiTabBarFlags_AutoSelectNewTabs);
         worlds_tabs.clear();
         for (auto& [path, _] : m_projects) {
+            if (path.empty())
+                continue;
             worlds_tabs[path] = true;
             auto filename = std::filesystem::path(path).filename().string();
             if (ImGui::BeginTabItem(filename.c_str(), &worlds_tabs[path])) {
@@ -258,16 +246,17 @@ void App::renderImGui() {
 
         // Current world levels
         if (projectOpened()) {
+            auto& active_project = getActiveProject();
             ImGui::Pad(15, 30);
             ImGui::Text("Levels");
             ImGui::BeginListBox("Levels", {PANEL_WIDTH, 0});
-            for (const auto& level : getActiveProject().worlds[0].levels.at(getActiveDepth())) {
-                if (ImGui::Selectable(level.name.c_str(), m_focused_level == level.name)) {
+            for (const auto& level : active_project.render_data->worlds[0].levels.at(active_project.depth)) {
+                if (ImGui::Selectable(level.name.c_str(), active_project.focused_level == level.name)) {
                 }
                 if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
-                    m_focused_level = level.name;
+                    active_project.focused_level = level.name;
                     auto level_center = level.bounds.pos + level.bounds.size / 2.f;
-                    getActiveCamera().centerOn(level_center.x, level_center.y);
+                    getCamera().centerOn(level_center.x, level_center.y);
                 }
             }
             ImGui::EndListBox();
@@ -276,15 +265,15 @@ void App::renderImGui() {
             ImGui::Text("Entities");
             ImGui::BeginListBox("Entities", {PANEL_WIDTH, 0});
 
-            if (!m_focused_level.empty()) {
-                const auto& level = getActiveData().getLevel(m_focused_level);
+            if (!active_project.focused_level.empty()) {
+                const auto& level = active_project.ldtk_data->getLevel(active_project.focused_level);
                 for (const auto& layer : level.allLayers()) {
                     for (const auto& entity : layer.allEntities()) {
                         auto label = entity.getName() + "##" + entity.iid.c_str();
                         if (ImGui::Selectable(label.c_str(), false)) {
                             auto posx = entity.getPosition().x + level.position.x;
                             auto posy = entity.getPosition().y + level.position.y;
-                            getActiveCamera().centerOn(posx, posy);
+                            getCamera().centerOn(posx, posy);
                         }
                         if (ImGui::IsItemHovered()) {
                             ImGui::SetTooltip(entity.iid.c_str());
@@ -302,7 +291,8 @@ void App::renderImGui() {
     }
     {
         if (projectOpened()) {
-            auto& world = getActiveProject().worlds[0];
+            auto& active_project = getActiveProject();
+            auto& world = active_project.render_data->worlds[0];
             if (world.levels.size() > 1) {
                 ImGui::GetStyle().WindowPadding = {10.f, 10.f};
                 auto line_height = ImGui::GetTextLineHeightWithSpacing();
@@ -310,13 +300,10 @@ void App::renderImGui() {
                 ImGui::SetNextWindowPos({PANEL_WIDTH + 15, BAR_HEIGHT + 15});
                 ImGui::Begin("WorldDepth", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration);
 
-                static int selected_depth;
-                selected_depth = getActiveDepth();
                 for (auto it = world.levels.rbegin(); it != world.levels.rend(); it++) {
                     const auto& [depth, _] = *it;
-                    if (ImGui::Selectable(std::to_string(depth).c_str(), selected_depth == depth)) {
-                        selected_depth = depth;
-                        setActiveDepth(depth);
+                    if (ImGui::Selectable(std::to_string(depth).c_str(), active_project.depth == depth)) {
+                        active_project.depth = depth;
                     }
                 }
                 ImGui::End();

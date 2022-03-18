@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "LDtkProject.hpp"
-#include "LDtkProjectVariables.hpp"
+#include "LDtkProject/LDtkProjectDrawables.hpp"
+#include "LDtkProject/LDtkProject.hpp"
 
 #include <LDtkLoader/World.hpp>
 #include <sogl/sogl.hpp>
@@ -22,11 +22,8 @@ public:
 
     void refreshActiveProject();
     LDtkProject& getActiveProject();
-    ldtk::World& getActiveData();
-    Camera2D& getActiveCamera();
 
-    int getActiveDepth();
-    void setActiveDepth(int depth);
+    Camera2D& getCamera();
 
     void run();
 
@@ -41,12 +38,9 @@ private:
     sogl::Window m_window;
     sogl::Shader m_shader;
 
-    std::string m_selected_project;
     std::map<std::string, LDtkProject> m_projects;
-    std::map<std::string, LDtkProjectVariables> m_projects_vars;
 
     std::string m_selected_project;
-    std::string m_focused_level;
 
     static constexpr auto vert_shader = GLSL(330 core,
         uniform vec2 window_size = vec2(0.0, 0.0);
