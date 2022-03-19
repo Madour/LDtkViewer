@@ -5,7 +5,6 @@
 
 #include "LDtkProject/ldtk2glm.hpp"
 
-#include "imgui/imgui.h"
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
 
@@ -199,6 +198,7 @@ void App::initImGui() {
     auto& style = ImGui::GetStyle();
 
     style.WindowBorderSize = 0.f;
+    style.WindowPadding = {0.f, 0.f};
     style.FrameRounding = 5.f;
     style.SelectableTextAlign = {0.5f, 0.5f};
     style.ScrollbarSize = 10.f;
@@ -231,118 +231,130 @@ void App::renderImGui() {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    {
-        static std::map<std::string, bool> worlds_tabs;
-        ImGui::GetStyle().WindowPadding = {0.f, 10.f};
-        ImGui::SetNextWindowSize({(float)m_window.getSize().x-PANEL_WIDTH, BAR_HEIGHT});
-        ImGui::SetNextWindowPos({PANEL_WIDTH, 0});
-        ImGui::Begin("Full", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration
-                                    | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
-        ImGui::BeginTabBar("WorldsSelector", ImGuiTabBarFlags_AutoSelectNewTabs);
-        worlds_tabs.clear();
-        for (auto& [path, _] : m_projects) {
-            if (path.empty())
-                continue;
-            worlds_tabs[path] = true;
-            auto filename = std::filesystem::path(path).filename().string();
-            if (ImGui::BeginTabItem(filename.c_str(), &worlds_tabs[path])) {
-                m_selected_project = path;
-                ImGui::EndTabItem();
-            }
-        }
-        for (auto& [path, open] : worlds_tabs) {
-            if (!open) {
-                unloadLDtkFile(path.c_str());
-            }
-        }
-        ImGui::EndTabBar();
-        ImGui::End();
-    }
-    {
-        ImGui::GetStyle().WindowPadding = {0.f, 0.f};
-        ImGui::SetNextWindowSize({PANEL_WIDTH, (float)m_window.getSize().y});
-        ImGui::SetNextWindowPos({0, 0});
-        ImGui::Begin("Main", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration);
-
-        // Software Title + version
-        ImGui::Pad(0, 20);
-        ImGui::TextCentered("LDtk Viewer v0.1");
-
-        // Current world levels
-        if (projectOpened()) {
-            auto& active_project = getActiveProject();
-            ImGui::Pad(15, 30);
-            ImGui::Text("Levels");
-            ImGui::BeginListBox("Levels", {PANEL_WIDTH, 0});
-            for (const auto& level : active_project.render_data->worlds[0].levels.at(active_project.depth)) {
-                bool is_selected = active_project.focused_level == level.name;
-                ImGui::Selectable(("##"+level.name).c_str(), is_selected, ImGuiSelectableFlags_AllowItemOverlap);
-                if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
-                    active_project.focused_level = level.name;
-                    auto level_center = level.bounds.pos + level.bounds.size / 2.f;
-                    getCamera().centerOn(level_center.x, level_center.y);
-                }
-                ImGui::SameLine();
-                if (is_selected || ImGui::IsItemHovered())
-                    ImGui::TextCenteredColored(colors::text_black, level.name.c_str());
-                else
-                    ImGui::TextCenteredColored(colors::text_white, level.name.c_str());
-            }
-            ImGui::EndListBox();
-
-            ImGui::Pad(15, 30);
-            ImGui::Text("Entities");
-            ImGui::BeginListBox("Entities", {PANEL_WIDTH, 0});
-
-            if (!active_project.focused_level.empty()) {
-                const auto& level = active_project.ldtk_data->getLevel(active_project.focused_level);
-                for (const auto& layer : level.allLayers()) {
-                    for (const auto& entity : layer.allEntities()) {
-                        auto label = entity.getName() + "##" + entity.iid.c_str();
-                        if (ImGui::Selectable(label.c_str(), false)) {
-                            auto posx = entity.getPosition().x + level.position.x;
-                            auto posy = entity.getPosition().y + level.position.y;
-                            getCamera().centerOn(posx, posy);
-                        }
-                        if (ImGui::IsItemHovered()) {
-                            ImGui::SetTooltip(entity.iid.c_str());
-                        }
-                    }
-                }
-            }
-            ImGui::EndListBox();
-        }
-
-        // demo window
-        static bool demo_open = false;
-        ImGui::Pad(15, 30);
-        ImGui::Checkbox("Demo Window", &demo_open);
-        ImGui::End();
-        if (demo_open)
-            ImGui::ShowDemoWindow(&demo_open);
-    }
-    {
-        if (projectOpened()) {
-            auto& active_project = getActiveProject();
-            auto& world = active_project.render_data->worlds[0];
-            if (world.levels.size() > 1) {
-                ImGui::GetStyle().WindowPadding = {10.f, 10.f};
-                auto line_height = ImGui::GetTextLineHeightWithSpacing();
-                ImGui::SetNextWindowSize({45, 20.f + world.levels.size() * line_height});
-                ImGui::SetNextWindowPos({PANEL_WIDTH + 15, BAR_HEIGHT + 15});
-                ImGui::Begin("WorldDepth", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoDecoration);
-
-                for (auto it = world.levels.rbegin(); it != world.levels.rend(); it++) {
-                    const auto& [depth, _] = *it;
-                    if (ImGui::Selectable(std::to_string(depth).c_str(), active_project.depth == depth)) {
-                        active_project.depth = depth;
-                    }
-                }
-                ImGui::End();
-            }
-        }
-    }
+    renderImGuiTabBar();
+    renderImGuiLeftPanel();
+    renderImGuiDepthSelector();
     ImGui::Render();
 
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+void App::renderImGuiTabBar() {
+    ImGui::SetNextWindowSize({(float)m_window.getSize().x-PANEL_WIDTH, BAR_HEIGHT});
+    ImGui::SetNextWindowPos({PANEL_WIDTH, 0});
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0.f, 10.f});
+    ImGui::Begin("TabBar", nullptr, imgui_window_flags | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
+    ImGui::BeginTabBar("ProjectsTabs", ImGuiTabBarFlags_AutoSelectNewTabs);
+
+    std::map<std::string, bool> worlds_tabs;
+    for (auto& [path, _] : m_projects) {
+        if (path.empty())
+            continue;
+        worlds_tabs[path] = true;
+        auto filename = std::filesystem::path(path).filename().string();
+        if (ImGui::BeginTabItem(filename.c_str(), &worlds_tabs[path])) {
+            if (m_selected_project != path)
+                m_selected_project = path;
+            ImGui::EndTabItem();
+        }
+    }
+    for (auto& [path, open] : worlds_tabs) {
+        if (!open) {
+            unloadLDtkFile(path.c_str());
+        }
+    }
+
+    ImGui::EndTabBar();
+    ImGui::End();
+    ImGui::PopStyleVar();
+}
+
+void App::renderImGuiLeftPanel() {
+    ImGui::SetNextWindowSize({PANEL_WIDTH, (float)m_window.getSize().y});
+    ImGui::SetNextWindowPos({0, 0});
+    ImGui::Begin("LeftPanel", nullptr, imgui_window_flags);
+
+    // Software Title + version
+    ImGui::Pad(0, 20);
+    ImGui::TextCentered("LDtk Viewer v0.1");
+
+    // Current world levels
+    if (projectOpened()) {
+        auto& active_project = getActiveProject();
+        ImGui::Pad(15, 30);
+
+        ImGui::Text("Levels");
+
+        ImGui::BeginListBox("Levels", {PANEL_WIDTH, 0});
+        for (const auto& level : active_project.render_data->worlds[0].levels.at(active_project.depth)) {
+            bool is_selected = active_project.focused_level == level.name;
+            ImGui::Selectable(("##"+level.name).c_str(), is_selected, ImGuiSelectableFlags_AllowItemOverlap);
+            if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+                active_project.focused_level = level.name;
+                auto level_center = level.bounds.pos + level.bounds.size / 2.f;
+                getCamera().centerOn(level_center.x, level_center.y);
+            }
+            ImGui::SameLine();
+            if (is_selected || ImGui::IsItemHovered())
+                ImGui::TextCenteredColored(colors::text_black, level.name.c_str());
+            else
+                ImGui::TextCenteredColored(colors::text_white, level.name.c_str());
+        }
+        ImGui::EndListBox();
+
+        ImGui::Pad(15, 30);
+
+        ImGui::Text("Entities");
+
+        ImGui::BeginListBox("Entities", {PANEL_WIDTH, 0});
+        if (!active_project.focused_level.empty()) {
+            const auto& level = active_project.ldtk_data->getLevel(active_project.focused_level);
+            for (const auto& layer : level.allLayers()) {
+                for (const auto& entity : layer.allEntities()) {
+                    auto label = entity.getName() + "##" + entity.iid.c_str();
+                    if (ImGui::Selectable(label.c_str(), false)) {
+                        auto posx = entity.getPosition().x + level.position.x;
+                        auto posy = entity.getPosition().y + level.position.y;
+                        getCamera().centerOn(posx, posy);
+                    }
+                    if (ImGui::IsItemHovered()) {
+                        ImGui::SetTooltip(entity.iid.c_str());
+                    }
+                }
+            }
+        }
+        ImGui::EndListBox();
+    }
+
+    // demo window
+    static bool demo_open = false;
+    ImGui::Pad(15, 30);
+    ImGui::Checkbox("Demo Window", &demo_open);
+    ImGui::End();
+
+    if (demo_open)
+        ImGui::ShowDemoWindow(&demo_open);
+}
+
+void App::renderImGuiDepthSelector() {
+    if (projectOpened()) {
+        auto& active_project = getActiveProject();
+        auto& world = active_project.render_data->worlds[0];
+        if (world.levels.size() > 1) {
+            auto line_height = ImGui::GetTextLineHeightWithSpacing();
+            ImGui::SetNextWindowSize({45, 20.f + world.levels.size() * line_height});
+            ImGui::SetNextWindowPos({PANEL_WIDTH + 15, BAR_HEIGHT + 15});
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {10.f, 10.f});
+            ImGui::Begin("DepthSelector", nullptr, imgui_window_flags);
+
+            for (auto it = world.levels.rbegin(); it != world.levels.rend(); it++) {
+                const auto& [depth, _] = *it;
+                if (ImGui::Selectable(std::to_string(depth).c_str(), active_project.depth == depth)) {
+                    active_project.depth = depth;
+                }
+            }
+            ImGui::End();
+            ImGui::PopStyleVar();
+        }
+    }
 }

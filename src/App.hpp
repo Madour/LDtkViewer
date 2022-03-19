@@ -5,6 +5,8 @@
 #include "LDtkProject/LDtkProjectDrawables.hpp"
 #include "LDtkProject/LDtkProject.hpp"
 
+#include "imgui/imgui.h"
+
 #include <LDtkLoader/World.hpp>
 #include <sogl/sogl.hpp>
 
@@ -34,6 +36,12 @@ private:
 
     void initImGui();
     void renderImGui();
+    void renderImGuiTabBar();
+    void renderImGuiLeftPanel();
+    void renderImGuiDepthSelector();
+    static constexpr auto imgui_window_flags = ImGuiWindowFlags_NoMove
+                                                     | ImGuiWindowFlags_NoResize
+                                                     | ImGuiWindowFlags_NoDecoration;
 
     sogl::Window m_window;
     sogl::Shader m_shader;
