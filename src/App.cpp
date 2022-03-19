@@ -1,6 +1,7 @@
 // Created by Modar Nasser on 12/03/2022.
 
 #include "App.hpp"
+#include "Config.hpp"
 
 #include "LDtkProject/ldtk2glm.hpp"
 
@@ -194,9 +195,35 @@ void App::initImGui() {
     ImGui::CreateContext();
     ImGui_ImplGlfw_InitForOpenGL(&m_window, true);
     ImGui_ImplOpenGL3_Init("#version 330 core");
-    ImGui::GetStyle().WindowBorderSize = 0.f;
-    ImGui::GetStyle().SelectableTextAlign = {0.5f, 0.5f};
-    // ImGui::GetStyle().ScaleAllSizes(1.f);
+
+    auto& style = ImGui::GetStyle();
+
+    style.WindowBorderSize = 0.f;
+    style.FrameRounding = 5.f;
+    style.SelectableTextAlign = {0.5f, 0.5f};
+    style.ScrollbarSize = 10.f;
+
+    style.Colors[ImGuiCol_Text] = ImColor(colors::text_white);
+
+    style.Colors[ImGuiCol_WindowBg] = ImColor(colors::window_bg);
+    style.Colors[ImGuiCol_FrameBg] = ImColor(colors::frame_bg);
+
+    style.Colors[ImGuiCol_Header] = ImColor(colors::selected);
+    style.Colors[ImGuiCol_HeaderHovered] = ImColor(colors::hovered);
+    style.Colors[ImGuiCol_HeaderActive] = ImColor(colors::active);
+
+    style.Colors[ImGuiCol_Tab] = ImColor(colors::tab_bg);
+    style.Colors[ImGuiCol_TabHovered] = ImColor(colors::hovered);
+    style.Colors[ImGuiCol_TabActive] = ImColor(colors::selected);
+
+    style.Colors[ImGuiCol_Button] = ImColor(colors::btn_bg);
+    style.Colors[ImGuiCol_ButtonHovered] = ImColor(colors::btn_hover);
+    style.Colors[ImGuiCol_ButtonActive] = ImColor(colors::btn_active);
+
+    style.Colors[ImGuiCol_ScrollbarBg] = ImColor(colors::scrollbar_bg);
+    style.Colors[ImGuiCol_ScrollbarGrab] = ImColor(colors::scrollbar_body);
+    style.Colors[ImGuiCol_ScrollbarGrabHovered] = ImColor(colors::scrollbar_hovered);
+    style.Colors[ImGuiCol_ScrollbarGrabActive] = ImColor(colors::scrollbar_active);
 }
 
 void App::renderImGui() {
@@ -204,9 +231,6 @@ void App::renderImGui() {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    static bool show_demo_window = false;
-    if (show_demo_window)
-        ImGui::ShowDemoWindow(&show_demo_window);
     {
         static std::map<std::string, bool> worlds_tabs;
         ImGui::GetStyle().WindowPadding = {0.f, 10.f};
@@ -251,13 +275,18 @@ void App::renderImGui() {
             ImGui::Text("Levels");
             ImGui::BeginListBox("Levels", {PANEL_WIDTH, 0});
             for (const auto& level : active_project.render_data->worlds[0].levels.at(active_project.depth)) {
-                if (ImGui::Selectable(level.name.c_str(), active_project.focused_level == level.name)) {
-                }
+                bool is_selected = active_project.focused_level == level.name;
+                ImGui::Selectable(("##"+level.name).c_str(), is_selected, ImGuiSelectableFlags_AllowItemOverlap);
                 if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
                     active_project.focused_level = level.name;
                     auto level_center = level.bounds.pos + level.bounds.size / 2.f;
                     getCamera().centerOn(level_center.x, level_center.y);
                 }
+                ImGui::SameLine();
+                if (is_selected || ImGui::IsItemHovered())
+                    ImGui::TextCenteredColored(colors::text_black, level.name.c_str());
+                else
+                    ImGui::TextCenteredColored(colors::text_white, level.name.c_str());
             }
             ImGui::EndListBox();
 
@@ -285,9 +314,12 @@ void App::renderImGui() {
         }
 
         // demo window
+        static bool demo_open = false;
         ImGui::Pad(15, 30);
-        ImGui::Checkbox("Demo Window", &show_demo_window);
+        ImGui::Checkbox("Demo Window", &demo_open);
         ImGui::End();
+        if (demo_open)
+            ImGui::ShowDemoWindow(&demo_open);
     }
     {
         if (projectOpened()) {

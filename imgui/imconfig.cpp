@@ -5,9 +5,22 @@
 
 using namespace ImGui;
 
-void ImGui::TextCentered(const char* text) {
-    SetCursorPosX((GetWindowSize().x - CalcTextSize(text).x) * 0.5f);
-    Text(text);
+void ImGui::TextCentered(const char* text, float width) {
+    if (width == 0)
+        SetCursorPosX((GetWindowSize().x - CalcTextSize(text).x) * 0.5f);
+    else
+        SetCursorPosX((width - CalcTextSize(text).x) * 0.5f);
+
+    Text("%s", text);
+}
+
+void ImGui::TextCenteredColored(unsigned color, const char* text, float width) {
+    if (width == 0)
+        SetCursorPosX((GetWindowSize().x - CalcTextSize(text).x) * 0.5f);
+    else
+        SetCursorPosX((width - CalcTextSize(text).x) * 0.5f);
+
+    TextColored(ImColor(color), "%s", text);
 }
 
 void ImGui::Pad(float x, float y) {

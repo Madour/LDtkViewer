@@ -119,7 +119,9 @@
 
 namespace ImGui
 {
-    void TextCentered(const char* text);
+    void TextCentered(const char* text, float width=0.f);
+    void TextCenteredColored(unsigned color, const char* text, float width=0.f);
+
     void Pad(float x, float y);
 }
 
