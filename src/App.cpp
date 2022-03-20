@@ -201,7 +201,7 @@ void App::initImGui() {
     style.WindowPadding = {0.f, 0.f};
     style.FrameRounding = 5.f;
     style.SelectableTextAlign = {0.5f, 0.5f};
-    style.ScrollbarSize = 10.f;
+    style.ScrollbarSize = 11.f;
 
     style.Colors[ImGuiCol_Text] = ImColor(colors::text_white);
 
@@ -229,8 +229,8 @@ void App::initImGui() {
 void App::renderImGui() {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
 
+    ImGui::NewFrame();
     renderImGuiTabBar();
     renderImGuiLeftPanel();
     renderImGuiDepthSelector();
@@ -252,10 +252,20 @@ void App::renderImGuiTabBar() {
             continue;
         worlds_tabs[path] = true;
         auto filename = std::filesystem::path(path).filename().string();
-        if (ImGui::BeginTabItem(filename.c_str(), &worlds_tabs[path])) {
-            if (m_selected_project != path)
-                m_selected_project = path;
+        auto label = filename + "##" + path;
+        auto is_selected = m_selected_project == path;
+        auto is_hovered = ImGui::HoveredItemLabel() == "TabBar/ProjectsTabs/"+label.substr(0, 56);
+        if (is_selected || is_hovered) {
+            ImGui::PushStyleColor(ImGuiCol_Text, colors::text_black);
+        }
+        if (ImGui::BeginTabItem(label.c_str(), &worlds_tabs[path])) {
             ImGui::EndTabItem();
+        }
+        if (is_selected || is_hovered) {
+            ImGui::PopStyleColor();
+        }
+        if (ImGui::IsItemActivated()) {
+            m_selected_project = path;
         }
     }
     for (auto& [path, open] : worlds_tabs) {
@@ -281,10 +291,13 @@ void App::renderImGuiLeftPanel() {
     // Current world levels
     if (projectOpened()) {
         auto& active_project = getActiveProject();
+        bool scroll_bar_hovered = ImGui::HoveredItemLabel() == "LeftPanel/" + ImGui::IDtoString(ImGui::GetID("Levels")) + "/#SCROLLY";
         ImGui::Pad(15, 30);
 
+        if (scroll_bar_hovered) {
+            ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 15.f);
+        }
         ImGui::Text("Levels");
-
         ImGui::BeginListBox("Levels", {PANEL_WIDTH, 0});
         for (const auto& level : active_project.render_data->worlds[0].levels.at(active_project.depth)) {
             bool is_selected = active_project.focused_level == level.name;
@@ -301,18 +314,26 @@ void App::renderImGuiLeftPanel() {
                 ImGui::TextCenteredColored(colors::text_white, level.name.c_str());
         }
         ImGui::EndListBox();
+        if (scroll_bar_hovered) {
+            scroll_bar_hovered = false;
+            ImGui::PopStyleVar();
+        }
 
         ImGui::Pad(15, 30);
 
+        if (std::string(ImGui::HoveredItemLabel()) == "LeftPanel/" + ImGui::IDtoString(ImGui::GetID("Entities")) + "/#SCROLLY") {
+            scroll_bar_hovered = true;
+            ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 15.f);
+        }
         ImGui::Text("Entities");
-
         ImGui::BeginListBox("Entities", {PANEL_WIDTH, 0});
+
         if (!active_project.focused_level.empty()) {
             const auto& level = active_project.ldtk_data->getLevel(active_project.focused_level);
             for (const auto& layer : level.allLayers()) {
                 for (const auto& entity : layer.allEntities()) {
-                    auto label = entity.getName() + "##" + entity.iid.c_str();
-                    if (ImGui::Selectable(label.c_str(), false)) {
+                    ImGui::Selectable(("##" + entity.iid).c_str(), false);
+                    if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
                         auto posx = entity.getPosition().x + level.position.x;
                         auto posy = entity.getPosition().y + level.position.y;
                         getCamera().centerOn(posx, posy);
@@ -320,10 +341,20 @@ void App::renderImGuiLeftPanel() {
                     if (ImGui::IsItemHovered()) {
                         ImGui::SetTooltip(entity.iid.c_str());
                     }
+                    ImGui::SameLine();
+                    if (ImGui::IsItemHovered() || ImGui::IsItemActive())
+                        ImGui::TextCenteredColored(colors::text_black, entity.getName().c_str());
+                    else
+                        ImGui::TextCenteredColored(colors::text_white, entity.getName().c_str());
                 }
             }
         }
         ImGui::EndListBox();
+
+        if (scroll_bar_hovered) {
+            scroll_bar_hovered = false;
+            ImGui::PopStyleVar();
+        }
     }
 
     // demo window
@@ -349,9 +380,16 @@ void App::renderImGuiDepthSelector() {
 
             for (auto it = world.levels.rbegin(); it != world.levels.rend(); it++) {
                 const auto& [depth, _] = *it;
-                if (ImGui::Selectable(std::to_string(depth).c_str(), active_project.depth == depth)) {
+                ImGui::Selectable(("##"+std::to_string(depth)).c_str(), active_project.depth == depth);
+                if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
                     active_project.depth = depth;
+                    active_project.focused_level = active_project.render_data->worlds[0].levels[depth][0].name;
                 }
+                ImGui::SameLine();
+                if (active_project.depth == depth || ImGui::IsItemHovered())
+                    ImGui::TextCenteredColored(colors::text_black, std::to_string(depth).c_str());
+                else
+                    ImGui::TextCenteredColored(colors::text_white, std::to_string(depth).c_str());
             }
             ImGui::End();
             ImGui::PopStyleVar();
