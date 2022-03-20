@@ -133,8 +133,8 @@ void App::processEvent(sogl::Event& event) {
     else if (auto move = event.as<sogl::Event::MouseMove>()) {
         if (camera_grabbed) {
             auto& camera = getCamera();
-            auto dx = (grab_pos.x - move->x) / camera.getZoom();
-            auto dy = (grab_pos.y - move->y) / camera.getZoom();
+            auto dx = static_cast<float>(grab_pos.x - move->x) / camera.getZoom();
+            auto dy = static_cast<float>(grab_pos.y - move->y) / camera.getZoom();
             grab_pos = {move->x, move->y};
             camera.move(dx, dy);
         }
@@ -170,17 +170,17 @@ void App::renderActiveProject() {
                     auto window_size = glm::vec2(m_window.getSize());
                     auto mouse_pos = getCamera().applyTransform(glm::vec2(m_window.getMousePosition()) - OFFSET/2.f - window_size/2.f);
 
-                    if (mouse_pos.x >= level.bounds.pos.x && mouse_pos.y >= level.bounds.pos.y
-                        && mouse_pos.x < level.bounds.pos.x + level.bounds.size.x
-                        && mouse_pos.y < level.bounds.pos.y + level.bounds.size.y) {
-                        m_shader.setUniform("color", glm::vec4(1.f, 1.f, 1.f, 1.f));
-                    } else if (level.name == active_project.focused_level) {
+                    if ((mouse_pos.x >= level.bounds.pos.x && mouse_pos.y >= level.bounds.pos.y
+                      && mouse_pos.x < level.bounds.pos.x + level.bounds.size.x
+                      && mouse_pos.y < level.bounds.pos.y + level.bounds.size.y)
+                      || level.name == active_project.focused_level) {
                         m_shader.setUniform("color", glm::vec4(1.f, 1.f, 1.f, 1.f));
                     } else {
                         m_shader.setUniform("color", glm::vec4(0.9f, 0.9f, 0.9f, 1.f));
                     }
                 } else {
-                    m_shader.setUniform("color", glm::vec4(0.8f, 0.8f, 0.8f, 0.5f - std::abs(active_project.depth - depth)/6.f));
+                    auto opacity = 0.5f - static_cast<float>(std::abs(active_project.depth - depth))/6.f;
+                    m_shader.setUniform("color", glm::vec4(0.8f, 0.8f, 0.8f, opacity));
                 }
                 for (const auto& layer : level.layers)
                     layer.render(m_shader);
@@ -252,7 +252,7 @@ void App::renderImGuiTabBar() {
             continue;
         worlds_tabs[path] = true;
         auto filename = std::filesystem::path(path).filename().string();
-        auto label = filename + "##" + path;
+        auto label = filename.append("##"+path);
         auto is_selected = m_selected_project == path;
         auto is_hovered = ImGui::HoveredItemLabel() == "TabBar/ProjectsTabs/"+label.substr(0, 56);
         if (is_selected || is_hovered) {
@@ -336,10 +336,10 @@ void App::renderImGuiLeftPanel() {
                     if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
                         auto posx = entity.getPosition().x + level.position.x;
                         auto posy = entity.getPosition().y + level.position.y;
-                        getCamera().centerOn(posx, posy);
+                        getCamera().centerOn(static_cast<float>(posx), static_cast<float>(posy));
                     }
                     if (ImGui::IsItemHovered()) {
-                        ImGui::SetTooltip(entity.iid.c_str());
+                        ImGui::SetTooltip("%s", entity.iid.c_str());
                     }
                     ImGui::SameLine();
                     if (ImGui::IsItemHovered() || ImGui::IsItemActive())
@@ -373,7 +373,7 @@ void App::renderImGuiDepthSelector() {
         auto& world = active_project.render_data->worlds[0];
         if (world.levels.size() > 1) {
             auto line_height = ImGui::GetTextLineHeightWithSpacing();
-            ImGui::SetNextWindowSize({45, 20.f + world.levels.size() * line_height});
+            ImGui::SetNextWindowSize({45, 20.f + static_cast<float>(world.levels.size()) * line_height});
             ImGui::SetNextWindowPos({PANEL_WIDTH + 15, BAR_HEIGHT + 15});
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {10.f, 10.f});
             ImGui::Begin("DepthSelector", nullptr, imgui_window_flags);
