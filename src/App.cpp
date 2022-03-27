@@ -329,7 +329,7 @@ void App::renderImGuiLeftPanel() {
         ImGui::BeginListBox("Entities", {PANEL_WIDTH, 0});
 
         if (!active_project.focused_level.empty()) {
-            const auto& level = active_project.ldtk_data->getLevel(active_project.focused_level);
+            const auto& level = active_project.ldtk_data->allWorlds()[0].getLevel(active_project.focused_level);
             for (const auto& layer : level.allLayers()) {
                 for (const auto& entity : layer.allEntities()) {
                     ImGui::Selectable(("##" + entity.iid).c_str(), false);

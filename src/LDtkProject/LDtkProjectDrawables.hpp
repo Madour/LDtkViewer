@@ -23,7 +23,7 @@ public:
     struct World {
         struct Level {
             struct Layer {
-                explicit Layer(const ldtk::Layer& layer);
+                explicit Layer(const ldtk::Layer& layer,  const ldtk::FilePath& filepath);
                 void render(sogl::Shader& shader) const;
                 std::string name;
             private:
@@ -31,14 +31,14 @@ public:
                 sogl::Texture* m_texture = nullptr;
             };
 
-            explicit Level(const ldtk::Level& level);
+            explicit Level(const ldtk::Level& level, const ldtk::FilePath& filepath);
             std::string name;
             int depth;
             Rect bounds;
             std::vector<Layer> layers;
         };
 
-        explicit World(const ldtk::World& world);
+        explicit World(const ldtk::World& world, const ldtk::FilePath& filepath);
         std::string name;
         std::map<int, std::vector<Level>> levels;
     };

@@ -5,7 +5,7 @@
 #include "Camera2D.hpp"
 #include "LDtkProjectDrawables.hpp"
 
-#include <LDtkLoader/World.hpp>
+#include <LDtkLoader/Project.hpp>
 
 #include <memory>
 
@@ -29,7 +29,7 @@ public:
     Camera2D camera;
     Depth depth;
     std::string focused_level;
-    std::unique_ptr<ldtk::World> ldtk_data = nullptr;
+    std::unique_ptr<ldtk::Project> ldtk_data = nullptr;
     std::unique_ptr<LDtkProjectDrawables> render_data = nullptr;
 };
 

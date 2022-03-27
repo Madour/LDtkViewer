@@ -3,14 +3,14 @@
 #include "LDtkProjectDrawables.hpp"
 #include "TextureManager.hpp"
 
-LDtkProjectDrawables::World::World(const ldtk::World& world) {
-    name = world.getFilePath().filename().substr(0, world.getFilePath().filename().find('.'));
+LDtkProjectDrawables::World::World(const ldtk::World& world, const ldtk::FilePath& filepath) {
+    name = filepath.filename().substr(0, filepath.filename().find('.'));
     for (const auto& level : world.allLevels()) {
-        levels[level.depth].emplace_back(level);
+        levels[level.depth].emplace_back(level, filepath);
     }
 }
 
-LDtkProjectDrawables::World::Level::Level(const ldtk::Level& level) {
+LDtkProjectDrawables::World::Level::Level(const ldtk::Level& level, const ldtk::FilePath& filepath) {
     name = level.name;
     depth = level.depth;
     bounds.pos.x = level.position.x;
@@ -19,15 +19,15 @@ LDtkProjectDrawables::World::Level::Level(const ldtk::Level& level) {
     bounds.size.y = level.size.y;
     layers.reserve(level.allLayers().size());
     for (const auto& layer : level.allLayers()) {
-        layers.emplace(layers.begin(), layer);
+        layers.emplace(layers.begin(), layer, filepath);
     }
 }
 
-LDtkProjectDrawables::World::Level::Layer::Layer(const ldtk::Layer& layer) {
+LDtkProjectDrawables::World::Level::Layer::Layer(const ldtk::Layer& layer, const ldtk::FilePath& filepath) {
     name = layer.getName();
 
     if (!layer.allTiles().empty()) {
-        auto proj_dir = layer.level->world->getFilePath().directory();
+        auto proj_dir = filepath.directory();
         m_texture = &TextureManager::get(proj_dir + layer.getTileset().path);
     }
 
