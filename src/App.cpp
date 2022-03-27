@@ -40,7 +40,11 @@ void App::unloadLDtkFile(const char* path) {
     if (m_projects.count(path)) {
         m_projects.erase(path);
         m_projects.erase(path);
-        m_selected_project.clear();
+        if (m_selected_project == path && m_projects.size() > 1) {
+            m_selected_project = m_projects.rbegin()->second.ldtk_data->getFilePath().c_str();
+        } else {
+            m_selected_project.clear();
+        }
     }
 }
 
