@@ -41,7 +41,7 @@ void App::unloadLDtkFile(const char* path) {
         m_projects.erase(path);
         m_projects.erase(path);
         if (m_selected_project == path && m_projects.size() > 1) {
-            m_selected_project = m_projects.rbegin()->second.ldtk_data->getFilePath().c_str();
+            m_selected_project = m_projects.rbegin()->second.data->getFilePath().c_str();
         } else {
             m_selected_project.clear();
         }
@@ -55,7 +55,7 @@ void App::run() {
         }
 
         if (projectOpened()) {
-            m_window.clear(ldtk2glm(getActiveProject().ldtk_data->getBgColor()));
+            m_window.clear(ldtk2glm(getActiveProject().data->getBgColor()));
             renderActiveProject();
         } else {
             m_window.clear({54.f/255.f, 60.f/255.f, 69.f/255.f});
@@ -165,7 +165,7 @@ void App::renderActiveProject() {
     m_shader.setUniform("offset", OFFSET);
     m_shader.setUniform("transform", getCamera().getTransform());
 
-    for (const auto& world : active_project.render_data->worlds) {
+    for (const auto& world : active_project.drawables->worlds) {
         for (const auto& [depth, levels] : world.levels) {
             if (depth > active_project.depth)
                 continue;
@@ -177,7 +177,7 @@ void App::renderActiveProject() {
                     if ((mouse_pos.x >= level.bounds.pos.x && mouse_pos.y >= level.bounds.pos.y
                       && mouse_pos.x < level.bounds.pos.x + level.bounds.size.x
                       && mouse_pos.y < level.bounds.pos.y + level.bounds.size.y)
-                      || level.name == active_project.focused_level) {
+                      || level.data.name == active_project.selected_level->name) {
                         m_shader.setUniform("color", glm::vec4(1.f, 1.f, 1.f, 1.f));
                     } else {
                         m_shader.setUniform("color", glm::vec4(0.9f, 0.9f, 0.9f, 1.f));
@@ -186,8 +186,8 @@ void App::renderActiveProject() {
                     auto opacity = 0.5f - static_cast<float>(std::abs(active_project.depth - depth))/6.f;
                     m_shader.setUniform("color", glm::vec4(0.8f, 0.8f, 0.8f, opacity));
                 }
-                for (const auto& layer : level.layers)
-                    layer.render(m_shader);
+                for (auto layer_it = level.layers.rbegin(); layer_it < level.layers.rend(); layer_it++)
+                    layer_it->render(m_shader);
             }
         }
     }
@@ -284,6 +284,8 @@ void App::renderImGuiTabBar() {
 }
 
 void App::renderImGuiLeftPanel() {
+    static const ldtk::Entity* selected_entity = nullptr;
+
     ImGui::SetNextWindowSize({PANEL_WIDTH, (float)m_window.getSize().y});
     ImGui::SetNextWindowPos({0, 0});
     ImGui::Begin("LeftPanel", nullptr, imgui_window_flags);
@@ -303,19 +305,20 @@ void App::renderImGuiLeftPanel() {
         }
         ImGui::Text("Levels");
         ImGui::BeginListBox("Levels", {PANEL_WIDTH, 0});
-        for (const auto& level : active_project.render_data->worlds[0].levels.at(active_project.depth)) {
-            bool is_selected = active_project.focused_level == level.name;
-            ImGui::Selectable(("##"+level.name).c_str(), is_selected, ImGuiSelectableFlags_AllowItemOverlap);
+        for (const auto& level : active_project.drawables->worlds[0].levels.at(active_project.depth)) {
+            bool is_selected = active_project.selected_level->name == level.data.name;
+            ImGui::Selectable(("##"+level.data.name).c_str(), is_selected, ImGuiSelectableFlags_AllowItemOverlap);
             if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
-                active_project.focused_level = level.name;
+                active_project.selected_level = &level.data;
                 auto level_center = level.bounds.pos + level.bounds.size / 2.f;
                 getCamera().centerOn(level_center.x, level_center.y);
+                selected_entity = nullptr;
             }
             ImGui::SameLine();
             if (is_selected || ImGui::IsItemHovered())
-                ImGui::TextCenteredColored(colors::text_black, level.name.c_str());
+                ImGui::TextCenteredColored(colors::text_black, level.data.name.c_str());
             else
-                ImGui::TextCenteredColored(colors::text_white, level.name.c_str());
+                ImGui::TextCenteredColored(colors::text_white, level.data.name.c_str());
         }
         ImGui::EndListBox();
         if (scroll_bar_hovered) {
@@ -332,21 +335,23 @@ void App::renderImGuiLeftPanel() {
         ImGui::Text("Entities");
         ImGui::BeginListBox("Entities", {PANEL_WIDTH, 0});
 
-        if (!active_project.focused_level.empty()) {
-            const auto& level = active_project.ldtk_data->allWorlds()[0].getLevel(active_project.focused_level);
+        if (active_project.selected_level != nullptr) {
+            const auto& level = *active_project.selected_level;
             for (const auto& layer : level.allLayers()) {
                 for (const auto& entity : layer.allEntities()) {
-                    ImGui::Selectable(("##" + entity.iid).c_str(), false);
+                    auto is_selected = selected_entity == &entity;
+                    ImGui::Selectable(("##" + entity.iid.str()).c_str(), is_selected);
                     if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
                         auto posx = entity.getPosition().x + level.position.x;
                         auto posy = entity.getPosition().y + level.position.y;
+                        selected_entity = &entity;
                         getCamera().centerOn(static_cast<float>(posx), static_cast<float>(posy));
                     }
                     if (ImGui::IsItemHovered()) {
-                        ImGui::SetTooltip("%s", entity.iid.c_str());
+                        ImGui::SetTooltip("%s", entity.iid.str().c_str());
                     }
                     ImGui::SameLine();
-                    if (ImGui::IsItemHovered() || ImGui::IsItemActive())
+                    if (selected_entity == &entity || ImGui::IsItemHovered())
                         ImGui::TextCenteredColored(colors::text_black, entity.getName().c_str());
                     else
                         ImGui::TextCenteredColored(colors::text_white, entity.getName().c_str());
@@ -354,6 +359,19 @@ void App::renderImGuiLeftPanel() {
             }
         }
         ImGui::EndListBox();
+
+        ImGui::Pad(15, 30);
+
+        if (selected_entity) {
+            ImGui::Text("Fields");
+            ImGui::BeginListBox("Fields", {PANEL_WIDTH, 0});
+
+            for (const auto& field : selected_entity->allFields()) {
+                ImGui::Selectable((std::to_string(int(field.type)) + " " + field.name).c_str(), false);
+            }
+
+            ImGui::EndListBox();
+        }
 
         if (scroll_bar_hovered) {
             scroll_bar_hovered = false;
@@ -374,7 +392,7 @@ void App::renderImGuiLeftPanel() {
 void App::renderImGuiDepthSelector() {
     if (projectOpened()) {
         auto& active_project = getActiveProject();
-        auto& world = active_project.render_data->worlds[0];
+        auto& world = active_project.drawables->worlds[0];
         if (world.levels.size() > 1) {
             auto line_height = ImGui::GetTextLineHeightWithSpacing();
             ImGui::SetNextWindowSize({45, 20.f + static_cast<float>(world.levels.size()) * line_height});
@@ -387,7 +405,7 @@ void App::renderImGuiDepthSelector() {
                 ImGui::Selectable(("##"+std::to_string(depth)).c_str(), active_project.depth == depth);
                 if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
                     active_project.depth = depth;
-                    active_project.focused_level = active_project.render_data->worlds[0].levels[depth][0].name;
+                    active_project.selected_level = &active_project.drawables->worlds[0].levels[depth][0].data;
                 }
                 ImGui::SameLine();
                 if (active_project.depth == depth || ImGui::IsItemHovered())

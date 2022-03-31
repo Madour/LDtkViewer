@@ -40,8 +40,8 @@ private:
     void renderImGuiLeftPanel();
     void renderImGuiDepthSelector();
     static constexpr auto imgui_window_flags = ImGuiWindowFlags_NoMove
-                                                     | ImGuiWindowFlags_NoResize
-                                                     | ImGuiWindowFlags_NoDecoration;
+                                             | ImGuiWindowFlags_NoResize
+                                             | ImGuiWindowFlags_NoDecoration;
 
     sogl::Window m_window;
     sogl::Shader m_shader;

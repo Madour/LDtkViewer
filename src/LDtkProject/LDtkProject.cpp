@@ -12,11 +12,12 @@ bool LDtkProject::load(const char* path) {
         return false;
     }
 
-    ldtk_data = std::unique_ptr<ldtk::Project>(project);
-    render_data = std::make_unique<LDtkProjectDrawables>();
-    render_data->name = ldtk_data->getFilePath().filename();
-    for (const auto& world : ldtk_data->allWorlds())
-        render_data->worlds.emplace_back(world, project->getFilePath());
-    focused_level = render_data->worlds[0].levels[0][0].name;
+    data = std::unique_ptr<ldtk::Project>(project);
+    drawables = std::make_unique<LDtkProjectDrawables>();
+    drawables->name = data->getFilePath().filename();
+    for (const auto& world : data->allWorlds())
+        drawables->worlds.emplace_back(world, project->getFilePath());
+    selected_world = &data->allWorlds()[0];
+    selected_level = &selected_world->allLevels()[0];
     return true;
 }

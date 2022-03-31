@@ -5,11 +5,11 @@
 		"doc": "https://ldtk.io/json",
 		"schema": "https://ldtk.io/files/JSON_SCHEMA.json",
 		"appAuthor": "Sebastien 'deepnight' Benard",
-		"appVersion": "0.10.0-beta3",
+		"appVersion": "1.0.0",
 		"url": "https://ldtk.io"
 	},
-	"jsonVersion": "0.10.0-beta3",
-	"appBuildId": 457078,
+	"jsonVersion": "1.0.0",
+	"appBuildId": 457931,
 	"nextUid": 140,
 	"identifierStyle": "Capitalize",
 	"worldLayout": "GridVania",
@@ -851,6 +851,7 @@
 			"tileId": 25,
 			"tileRenderMode": "Stretch",
 			"tileRect": { "x": 144, "y": 16, "w": 16, "h": 16, "tilesetUid": 133 },
+			"nineSliceBorders": [],
 			"maxCount": 0,
 			"limitScope": "PerLevel",
 			"limitBehavior": "DiscardOldOnes",
@@ -861,7 +862,7 @@
 					"identifier": "type",
 					"__type": "LocalEnum.ItemType",
 					"uid": 76,
-					"type": { "id": "F_Enum", "params": [74] },
+					"type": "F_Enum(74)",
 					"isArray": false,
 					"canBeNull": false,
 					"arrayMinLength": null,
@@ -966,6 +967,7 @@
 			"tileId": 245,
 			"tileRenderMode": "FitInside",
 			"tileRect": { "x": 80, "y": 240, "w": 16, "h": 16, "tilesetUid": 133 },
+			"nineSliceBorders": [],
 			"maxCount": 1,
 			"limitScope": "PerWorld",
 			"limitBehavior": "PreventAdding",
@@ -976,7 +978,7 @@
 					"identifier": "inventory",
 					"__type": "Array<LocalEnum.ItemType>",
 					"uid": 91,
-					"type": { "id": "F_Enum", "params": [74] },
+					"type": "F_Enum(74)",
 					"isArray": true,
 					"canBeNull": false,
 					"arrayMinLength": null,
@@ -1052,6 +1054,7 @@
 			"tileId": 243,
 			"tileRenderMode": "Repeat",
 			"tileRect": { "x": 48, "y": 240, "w": 16, "h": 16, "tilesetUid": 133 },
+			"nineSliceBorders": [],
 			"maxCount": 0,
 			"limitScope": "PerLevel",
 			"limitBehavior": "MoveLastOne",
@@ -1079,6 +1082,7 @@
 			"tileId": 128,
 			"tileRenderMode": "Repeat",
 			"tileRect": { "x": 0, "y": 128, "w": 16, "h": 16, "tilesetUid": 133 },
+			"nineSliceBorders": [],
 			"maxCount": 0,
 			"limitScope": "PerLevel",
 			"limitBehavior": "MoveLastOne",
@@ -1139,6 +1143,7 @@
 			"tileId": 190,
 			"tileRenderMode": "FitInside",
 			"tileRect": { "x": 224, "y": 176, "w": 16, "h": 16, "tilesetUid": 133 },
+			"nineSliceBorders": [],
 			"maxCount": 0,
 			"limitScope": "PerLevel",
 			"limitBehavior": "MoveLastOne",
@@ -1196,6 +1201,7 @@
 			"tileId": 213,
 			"tileRenderMode": "Repeat",
 			"tileRect": { "x": 96, "y": 144, "w": 16, "h": 16, "tilesetUid": 6 },
+			"nineSliceBorders": [],
 			"maxCount": 0,
 			"limitScope": "PerLevel",
 			"limitBehavior": "MoveLastOne",
@@ -1275,7 +1281,7 @@
 			"identifier": "roomType",
 			"__type": "LocalEnum.RoomType",
 			"uid": 99,
-			"type": { "id": "F_Enum", "params": [98] },
+			"type": "F_Enum(98)",
 			"isArray": false,
 			"canBeNull": true,
 			"arrayMinLength": null,
@@ -14495,7 +14501,7 @@
 								"entityIid": "efa1c030-66b0-11ec-8923-1f96484ed71d",
 								"layerIid": "a3707645-66b0-11ec-9cd7-cf8dbd45f43c",
 								"levelIid": "a3707640-66b0-11ec-9cd7-59efc6b24075",
-								"worldIid": "97183170-8dc0-11ec-8fe2-2b5a38215d82"
+								"worldIid": "13bee9e0-8dc0-11ec-9421-db1e6aacd3d9"
 							}, "__type": "EntityRef", "__tile": null, "defUid": 131, "realEditorValues": [{
 								"id": "V_String",
 								"params": ["efa1c030-66b0-11ec-8923-1f96484ed71d"]
@@ -15457,7 +15463,7 @@
 								"entityIid": "eec0d610-66b0-11ec-8923-93cc88ee368d",
 								"layerIid": "a36fda05-66b0-11ec-9cd7-1f23fbb89ea4",
 								"levelIid": "a36fda00-66b0-11ec-9cd7-ffa8f8d0b484",
-								"worldIid": "97183170-8dc0-11ec-8fe2-2b5a38215d82"
+								"worldIid": "13bee9e0-8dc0-11ec-9421-db1e6aacd3d9"
 							}, "__type": "EntityRef", "__tile": null, "defUid": 131, "realEditorValues": [{
 								"id": "V_String",
 								"params": ["eec0d610-66b0-11ec-8923-93cc88ee368d"]

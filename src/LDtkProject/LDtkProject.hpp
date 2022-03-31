@@ -28,8 +28,9 @@ public:
 
     Camera2D camera;
     Depth depth;
-    std::string focused_level;
-    std::unique_ptr<ldtk::Project> ldtk_data = nullptr;
-    std::unique_ptr<LDtkProjectDrawables> render_data = nullptr;
+    const ldtk::World* selected_world = nullptr;
+    const ldtk::Level* selected_level = nullptr;
+    const ldtk::Entity* selected_entity = nullptr;
+    std::unique_ptr<ldtk::Project> data = nullptr;
+    std::unique_ptr<LDtkProjectDrawables> drawables = nullptr;
 };
-

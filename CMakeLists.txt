@@ -11,7 +11,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(sogl)
 
-find_package(LDtkLoader 0.10)
+find_package(LDtkLoader 1.0)
 
 if(MSVC)
     add_compile_options(
