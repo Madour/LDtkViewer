@@ -26,9 +26,9 @@ bool App::loadLDtkFile(const char* path) {
         unloadLDtkFile(path);
     }
     m_projects.emplace(path, LDtkProject{});
-    if (m_projects[path].load(path)) {
-        m_projects[path].camera.setSize(m_window.getSize());
-        m_selected_project = path;
+    if (m_projects.at(path).load(path)) {
+        m_projects.at(path).camera.setSize(m_window.getSize());
+        m_selected_project = &m_projects.at(path);
         return true;
     } else {
         m_projects.erase(path);
@@ -38,12 +38,12 @@ bool App::loadLDtkFile(const char* path) {
 
 void App::unloadLDtkFile(const char* path) {
     if (m_projects.count(path)) {
+        const auto closed_path = m_selected_project->path;
         m_projects.erase(path);
-        m_projects.erase(path);
-        if (m_selected_project == path && m_projects.size() > 1) {
-            m_selected_project = m_projects.rbegin()->second.data->getFilePath().c_str();
+        if (closed_path == path && m_projects.size() > 1) {
+            m_selected_project = &m_projects.rbegin()->second;
         } else {
-            m_selected_project.clear();
+            m_selected_project = nullptr;
         }
     }
 }
@@ -68,11 +68,11 @@ void App::run() {
 }
 
 bool App::projectOpened() {
-    return !m_selected_project.empty();
+    return m_selected_project != nullptr;
 }
 
 void App::refreshActiveProject() {
-    const auto path = m_selected_project;
+    const auto path = m_selected_project->path;
     const auto cam = getCamera();
     const auto depth = getActiveProject().depth;
     unloadLDtkFile(path.c_str());
@@ -82,11 +82,11 @@ void App::refreshActiveProject() {
 }
 
 LDtkProject& App::getActiveProject() {
-    return m_projects.at(m_selected_project);
+    return *m_selected_project;
 }
 
 Camera2D& App::getCamera() {
-    return m_projects.at(m_selected_project).camera;
+    return m_selected_project->camera;
 }
 
 /*
@@ -257,7 +257,7 @@ void App::renderImGuiTabBar() {
         worlds_tabs[path] = true;
         auto filename = std::filesystem::path(path).filename().string();
         auto label = filename.append("##"+path);
-        auto is_selected = m_selected_project == path;
+        auto is_selected = m_selected_project->path == path;
         auto is_hovered = ImGui::HoveredItemLabel() == "TabBar/ProjectsTabs/"+label.substr(0, 56);
         if (is_selected || is_hovered) {
             ImGui::PushStyleColor(ImGuiCol_Text, colors::text_black);
@@ -269,7 +269,7 @@ void App::renderImGuiTabBar() {
             ImGui::PopStyleColor();
         }
         if (ImGui::IsItemActivated()) {
-            m_selected_project = path;
+            m_selected_project = &m_projects.at(path);
         }
     }
     for (auto& [path, open] : worlds_tabs) {

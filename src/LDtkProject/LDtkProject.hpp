@@ -28,6 +28,7 @@ public:
 
     Camera2D camera;
     Depth depth;
+    std::string path;
     const ldtk::World* selected_world = nullptr;
     const ldtk::Level* selected_level = nullptr;
     const ldtk::Entity* selected_entity = nullptr;

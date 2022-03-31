@@ -48,7 +48,7 @@ private:
 
     std::map<std::string, LDtkProject> m_projects;
 
-    std::string m_selected_project;
+    LDtkProject* m_selected_project = nullptr;
 
     static constexpr auto vert_shader = GLSL(330 core,
         uniform vec2 window_size = vec2(0.0, 0.0);

@@ -2,10 +2,10 @@
 
 #include "LDtkProject.hpp"
 
-bool LDtkProject::load(const char* path) {
+bool LDtkProject::load(const char* a_path) {
     auto* project = new ldtk::Project();
     try {
-        project->loadFromFile(path);
+        project->loadFromFile(a_path);
     } catch(std::exception& ex) {
         std::cout << ex.what() << std::endl;
         delete project;
@@ -13,6 +13,8 @@ bool LDtkProject::load(const char* path) {
     }
 
     data = std::unique_ptr<ldtk::Project>(project);
+    path = std::string(data->getFilePath().c_str());
+
     drawables = std::make_unique<LDtkProjectDrawables>();
     drawables->name = data->getFilePath().filename();
     for (const auto& world : data->allWorlds())
