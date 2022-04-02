@@ -167,30 +167,29 @@ void App::renderActiveProject() {
     m_shader.setUniform("offset", OFFSET);
     m_shader.setUniform("transform", getCamera().getTransform());
 
-    for (const auto& world : active_project.drawables->worlds) {
-        for (const auto& [depth, levels] : world.levels) {
-            if (depth > active_project.depth)
-                continue;
-            for (const auto& level : levels) {
-                if (depth == active_project.depth) {
-                    auto window_size = glm::vec2(m_window.getSize());
-                    auto mouse_pos = getCamera().applyTransform(glm::vec2(m_window.getMousePosition()) - OFFSET/2.f - window_size/2.f);
+    const auto& world = *active_project.rendered_world;
+    for (const auto& [depth, levels] : world.levels) {
+        if (depth > active_project.depth)
+            continue;
+        for (const auto& level : levels) {
+            if (depth == active_project.depth) {
+                auto window_size = glm::vec2(m_window.getSize());
+                auto mouse_pos = getCamera().applyTransform(glm::vec2(m_window.getMousePosition()) - OFFSET/2.f - window_size/2.f);
 
-                    if ((mouse_pos.x >= level.bounds.pos.x && mouse_pos.y >= level.bounds.pos.y
-                      && mouse_pos.x < level.bounds.pos.x + level.bounds.size.x
-                      && mouse_pos.y < level.bounds.pos.y + level.bounds.size.y)
-                      || level.data.name == active_project.selected_level->name) {
-                        m_shader.setUniform("color", glm::vec4(1.f, 1.f, 1.f, 1.f));
-                    } else {
-                        m_shader.setUniform("color", glm::vec4(0.9f, 0.9f, 0.9f, 1.f));
-                    }
+                if ((mouse_pos.x >= level.bounds.pos.x && mouse_pos.y >= level.bounds.pos.y
+                  && mouse_pos.x < level.bounds.pos.x + level.bounds.size.x
+                  && mouse_pos.y < level.bounds.pos.y + level.bounds.size.y)
+                  || level.data.name == active_project.selected_level->name) {
+                    m_shader.setUniform("color", glm::vec4(1.f, 1.f, 1.f, 1.f));
                 } else {
-                    auto opacity = 0.5f - static_cast<float>(std::abs(active_project.depth - depth))/6.f;
-                    m_shader.setUniform("color", glm::vec4(0.8f, 0.8f, 0.8f, opacity));
+                    m_shader.setUniform("color", glm::vec4(0.9f, 0.9f, 0.9f, 1.f));
                 }
-                for (auto layer_it = level.layers.rbegin(); layer_it < level.layers.rend(); layer_it++)
-                    layer_it->render(m_shader);
+            } else {
+                auto opacity = 0.5f - static_cast<float>(std::abs(active_project.depth - depth))/6.f;
+                m_shader.setUniform("color", glm::vec4(0.8f, 0.8f, 0.8f, opacity));
             }
+            for (auto layer_it = level.layers.rbegin(); layer_it < level.layers.rend(); layer_it++)
+                layer_it->render(m_shader);
         }
     }
 }
@@ -206,6 +205,7 @@ void App::initImGui() {
     style.WindowBorderSize = 0.f;
     style.WindowPadding = {0.f, 0.f};
     style.FrameRounding = 5.f;
+    style.PopupBorderSize = 1;
     style.SelectableTextAlign = {0.5f, 0.5f};
     style.ScrollbarSize = 11.f;
 
@@ -213,6 +213,9 @@ void App::initImGui() {
 
     style.Colors[ImGuiCol_WindowBg] = ImColor(colors::window_bg);
     style.Colors[ImGuiCol_FrameBg] = ImColor(colors::frame_bg);
+
+    style.Colors[ImGuiCol_FrameBgHovered] = ImColor(colors::hovered);
+    style.Colors[ImGuiCol_FrameBgActive] = ImColor(colors::active);
 
     style.Colors[ImGuiCol_Header] = ImColor(colors::selected);
     style.Colors[ImGuiCol_HeaderHovered] = ImColor(colors::hovered);
@@ -295,16 +298,58 @@ void App::renderImGuiLeftPanel() {
     ImGui::Begin("LeftPanel", nullptr, imgui_window_flags);
 
     // demo window
-    //ImGui::Checkbox("Demo Window", &demo_open);
+    // ImGui::Checkbox("Demo Window", &demo_open);
+    // ImGui::TextCentered(ImGui::HoveredItemLabel().c_str());
 
     // Software Title + version
-    ImGui::Pad(0, 20);
+    ImGui::Pad(0, 3.5f);
     ImGui::TextCentered("LDtk Viewer v0.1");
+    ImGui::PushStyleColor(ImGuiCol_Separator, colors::selected);
+    ImGui::Pad(0, 0.5);
+    ImGui::Separator();
+    ImGui::PopStyleColor();
+    ImGui::Separator();
 
     // Current world levels
     if (projectOpened()) {
         auto& active_project = getActiveProject();
         bool scroll_bar_hovered = false;
+
+        if (active_project.data->allWorlds().size() > 1) {
+            ImGui::Pad(PANEL_WIDTH*0.125f, 14);
+            ImGui::PushStyleColor(ImGuiCol_Text, colors::text_black);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {5, 5});
+            ImGui::SetNextItemWidth(PANEL_WIDTH*0.75f);
+            if (ImGui::BeginCombo("##WorldsSelect", nullptr, ImGuiComboFlags_CustomPreview)) {
+                for (const auto& world : active_project.drawables->worlds) {
+                    bool is_selected = active_project.selected_world->getName() == world.data.getName();
+                    if (ImGui::Selectable(("##"+world.data.getName()).c_str(), is_selected)) {
+                        active_project.rendered_world = &world;
+                        active_project.selected_world = &world.data;
+                        active_project.selected_level = &active_project.selected_world->allLevels()[0];
+                        active_project.selected_entity = nullptr;
+                        active_project.selected_field = nullptr;
+                    }
+                    ImGui::SameLine();
+                    if (is_selected || ImGui::IsItemHovered())
+                        ImGui::TextCenteredColored(colors::text_black, world.data.getName().c_str());
+                    else
+                        ImGui::TextCenteredColored(colors::text_white, world.data.getName().c_str());
+                }
+                ImGui::EndCombo();
+            }
+            ImGui::PopStyleVar();
+            ImGui::PopStyleColor();
+            if (ImGui::BeginComboPreview()) {
+                if (ImGui::IsItemHovered()) {
+                    ImGui::TextCenteredColored(colors::text_black, active_project.selected_world->getName().c_str());
+                } else {
+                    ImGui::TextCenteredColored(colors::text_white, active_project.selected_world->getName().c_str());
+                }
+                ImGui::EndComboPreview();
+            }
+        }
+
         ImGui::Pad(15, 18);
 
         if (ImGui::HoveredItemLabel() == "LeftPanel/" + ImGui::IDtoString(ImGui::GetID("Levels")) + "/#SCROLLY") {
@@ -313,7 +358,7 @@ void App::renderImGuiLeftPanel() {
         }
         ImGui::Text("Levels");
         ImGui::BeginListBox("Levels", {PANEL_WIDTH, ImGui::GetTextLineHeightWithSpacing() * 6.75f});
-        for (const auto& level : active_project.drawables->worlds[0].levels.at(active_project.depth)) {
+        for (const auto& level : active_project.rendered_world->levels.at(active_project.depth)) {
             bool is_selected = active_project.selected_level->name == level.data.name;
             ImGui::Selectable(("##"+level.data.iid.str()).c_str(), is_selected, ImGuiSelectableFlags_AllowItemOverlap);
             if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
@@ -375,7 +420,6 @@ void App::renderImGuiLeftPanel() {
         }
 
         ImGui::Pad(15, 18);
-        static std::vector<std::string> selected_field_values;
         if (std::string(ImGui::HoveredItemLabel()) == "LeftPanel/" + ImGui::IDtoString(ImGui::GetID("Fields")) + "/#SCROLLY") {
             scroll_bar_hovered = true;
             ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 15.f);
@@ -389,7 +433,7 @@ void App::renderImGuiLeftPanel() {
                 ImGui::Selectable(("##" + std::to_string(int(field.type)) + " " + field.name).c_str(), is_selected);
                 if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
                     active_project.selected_field = &field;
-                    selected_field_values = LDtkProject::fieldValuesToString(field, *active_project.selected_entity);
+                    active_project.selected_field_values = LDtkProject::fieldValuesToString(field, *active_project.selected_entity);
                 }
                 ImGui::SameLine();
                 if (is_selected || ImGui::IsItemHovered())
@@ -405,7 +449,7 @@ void App::renderImGuiLeftPanel() {
             }
 
             if (active_project.selected_field != nullptr) {
-                renderImGuiLeftPanel_FieldValues(*active_project.selected_field, selected_field_values);
+                renderImGuiLeftPanel_FieldValues(*active_project.selected_field, active_project.selected_field_values);
             }
         }
     }
@@ -439,7 +483,7 @@ void App::renderImGuiLeftPanel_FieldValues(const ldtk::FieldDef& field, const st
 void App::renderImGuiDepthSelector() {
     if (projectOpened()) {
         auto& active_project = getActiveProject();
-        auto& world = active_project.drawables->worlds[0];
+        auto& world = *active_project.rendered_world;
         if (world.levels.size() > 1) {
             auto line_height = ImGui::GetTextLineHeightWithSpacing();
             ImGui::SetNextWindowSize({45, 20.f + static_cast<float>(world.levels.size()) * line_height});
@@ -452,7 +496,7 @@ void App::renderImGuiDepthSelector() {
                 ImGui::Selectable(("##"+std::to_string(depth)).c_str(), active_project.depth == depth);
                 if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
                     active_project.depth = depth;
-                    active_project.selected_level = &active_project.drawables->worlds[0].levels[depth][0].data;
+                    active_project.selected_level = &world.levels.at(depth)[0].data;
                 }
                 ImGui::SameLine();
                 if (active_project.depth == depth || ImGui::IsItemHovered())
