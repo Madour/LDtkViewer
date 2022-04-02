@@ -6,8 +6,9 @@ Supports the latest LDtk format with all the new features.
 
 ### Build
 
-This projects uses CMake to fetch all its dependencies and generate build files.
-Simply run CMake.
+This project depends on [LDtkLoader](https://github.com/Madour/LDtkLoader). Make sure the latest version is installed.
+
+Then, simply run CMake.
 
 ```
 mkdir build && cd build
