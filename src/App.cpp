@@ -7,6 +7,7 @@
 
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
+#include "imgui/imgui_internal.h"
 
 #include <LDtkLoader/World.hpp>
 
@@ -38,10 +39,11 @@ bool App::loadLDtkFile(const char* path) {
 
 void App::unloadLDtkFile(const char* path) {
     if (m_projects.count(path)) {
-        const auto closed_path = m_selected_project->path;
+        const auto selected_path = m_selected_project->path;
         m_projects.erase(path);
-        if (closed_path == path && m_projects.size() > 1) {
-            m_selected_project = &m_projects.rbegin()->second;
+        if (m_projects.size() > 1) {
+            if (selected_path == path)
+                m_selected_project = &m_projects.rbegin()->second;
         } else {
             m_selected_project = nullptr;
         }
@@ -284,11 +286,16 @@ void App::renderImGuiTabBar() {
 }
 
 void App::renderImGuiLeftPanel() {
-    static const ldtk::Entity* selected_entity = nullptr;
+    static bool demo_open = false;
+    if (demo_open)
+        ImGui::ShowDemoWindow(&demo_open);
 
     ImGui::SetNextWindowSize({PANEL_WIDTH, (float)m_window.getSize().y});
     ImGui::SetNextWindowPos({0, 0});
     ImGui::Begin("LeftPanel", nullptr, imgui_window_flags);
+
+    // demo window
+    //ImGui::Checkbox("Demo Window", &demo_open);
 
     // Software Title + version
     ImGui::Pad(0, 20);
@@ -297,22 +304,24 @@ void App::renderImGuiLeftPanel() {
     // Current world levels
     if (projectOpened()) {
         auto& active_project = getActiveProject();
-        bool scroll_bar_hovered = ImGui::HoveredItemLabel() == "LeftPanel/" + ImGui::IDtoString(ImGui::GetID("Levels")) + "/#SCROLLY";
-        ImGui::Pad(15, 30);
+        bool scroll_bar_hovered = false;
+        ImGui::Pad(15, 18);
 
-        if (scroll_bar_hovered) {
+        if (ImGui::HoveredItemLabel() == "LeftPanel/" + ImGui::IDtoString(ImGui::GetID("Levels")) + "/#SCROLLY") {
+            scroll_bar_hovered = true;
             ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 15.f);
         }
         ImGui::Text("Levels");
         ImGui::BeginListBox("Levels", {PANEL_WIDTH, 0});
         for (const auto& level : active_project.drawables->worlds[0].levels.at(active_project.depth)) {
             bool is_selected = active_project.selected_level->name == level.data.name;
-            ImGui::Selectable(("##"+level.data.name).c_str(), is_selected, ImGuiSelectableFlags_AllowItemOverlap);
+            ImGui::Selectable(("##"+level.data.iid.str()).c_str(), is_selected, ImGuiSelectableFlags_AllowItemOverlap);
             if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
                 active_project.selected_level = &level.data;
                 auto level_center = level.bounds.pos + level.bounds.size / 2.f;
                 getCamera().centerOn(level_center.x, level_center.y);
-                selected_entity = nullptr;
+                active_project.selected_entity = nullptr;
+                active_project.selected_field = nullptr;
             }
             ImGui::SameLine();
             if (is_selected || ImGui::IsItemHovered())
@@ -326,7 +335,7 @@ void App::renderImGuiLeftPanel() {
             ImGui::PopStyleVar();
         }
 
-        ImGui::Pad(15, 30);
+        ImGui::Pad(15, 18);
 
         if (std::string(ImGui::HoveredItemLabel()) == "LeftPanel/" + ImGui::IDtoString(ImGui::GetID("Entities")) + "/#SCROLLY") {
             scroll_bar_hovered = true;
@@ -339,19 +348,20 @@ void App::renderImGuiLeftPanel() {
             const auto& level = *active_project.selected_level;
             for (const auto& layer : level.allLayers()) {
                 for (const auto& entity : layer.allEntities()) {
-                    auto is_selected = selected_entity == &entity;
+                    auto is_selected = active_project.selected_entity == &entity;
                     ImGui::Selectable(("##" + entity.iid.str()).c_str(), is_selected);
                     if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
                         auto posx = entity.getPosition().x + level.position.x;
                         auto posy = entity.getPosition().y + level.position.y;
-                        selected_entity = &entity;
+                        active_project.selected_entity = &entity;
+                        active_project.selected_field = nullptr;
                         getCamera().centerOn(static_cast<float>(posx), static_cast<float>(posy));
                     }
                     if (ImGui::IsItemHovered()) {
                         ImGui::SetTooltip("%s", entity.iid.str().c_str());
                     }
                     ImGui::SameLine();
-                    if (selected_entity == &entity || ImGui::IsItemHovered())
+                    if (is_selected || ImGui::IsItemHovered())
                         ImGui::TextCenteredColored(colors::text_black, entity.getName().c_str());
                     else
                         ImGui::TextCenteredColored(colors::text_white, entity.getName().c_str());
@@ -359,34 +369,71 @@ void App::renderImGuiLeftPanel() {
             }
         }
         ImGui::EndListBox();
-
-        ImGui::Pad(15, 30);
-
-        if (selected_entity) {
-            ImGui::Text("Fields");
-            ImGui::BeginListBox("Fields", {PANEL_WIDTH, 0});
-
-            for (const auto& field : selected_entity->allFields()) {
-                ImGui::Selectable((std::to_string(int(field.type)) + " " + field.name).c_str(), false);
-            }
-
-            ImGui::EndListBox();
-        }
-
         if (scroll_bar_hovered) {
             scroll_bar_hovered = false;
             ImGui::PopStyleVar();
         }
+
+        ImGui::Pad(15, 18);
+        static std::vector<std::string> selected_field_values;
+        if (std::string(ImGui::HoveredItemLabel()) == "LeftPanel/" + ImGui::IDtoString(ImGui::GetID("Fields")) + "/#SCROLLY") {
+            scroll_bar_hovered = true;
+            ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 15.f);
+        }
+        if (active_project.selected_entity != nullptr) {
+            ImGui::Text("Fields");
+            ImGui::BeginListBox("Fields", {PANEL_WIDTH, 0});
+
+            for (const auto& field : active_project.selected_entity->allFields()) {
+                auto is_selected = active_project.selected_field == &field;
+                ImGui::Selectable(("##" + std::to_string(int(field.type)) + " " + field.name).c_str(), is_selected);
+                if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+                    active_project.selected_field = &field;
+                    selected_field_values = LDtkProject::fieldValuesToString(field, *active_project.selected_entity);
+                }
+                ImGui::SameLine();
+                if (is_selected || ImGui::IsItemHovered())
+                    ImGui::TextCenteredColored(colors::text_black, field.name.c_str());
+                else
+                    ImGui::TextCenteredColored(colors::text_white, field.name.c_str());
+            }
+
+            ImGui::EndListBox();
+            if (scroll_bar_hovered) {
+                scroll_bar_hovered = false;
+                ImGui::PopStyleVar();
+            }
+
+            if (active_project.selected_field != nullptr) {
+                renderImGuiLeftPanel_FieldValues(*active_project.selected_field, selected_field_values);
+            }
+        }
     }
-
-    // demo window
-    static bool demo_open = false;
-    ImGui::Pad(15, 30);
-    ImGui::Checkbox("Demo Window", &demo_open);
     ImGui::End();
+}
 
-    if (demo_open)
-        ImGui::ShowDemoWindow(&demo_open);
+void App::renderImGuiLeftPanel_FieldValues(const ldtk::FieldDef& field, const std::vector<std::string>& values) {
+    ImGui::Pad(15, 18);
+    ImGui::Text("%s", (LDtkProject::fieldTypeEnumToString(field.type) + " field").c_str());
+    auto line_height = ImGui::GetTextLineHeightWithSpacing();
+    if (!LDtkProject::fieldTypeIsArray(field.type)) {
+        auto height = ImGui::CalcTextSize(values.at(0).c_str()).y + ImGui::GetStyle().ItemSpacing.y;
+        ImGui::BeginChildFrame(ImGui::GetID("FieldValue"), ImVec2(PANEL_WIDTH, height + ImGui::GetStyle().FramePadding.y));
+        ImGui::TextCentered(values.at(0).c_str());
+        ImGui::EndChildFrame();
+    } else {
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {3, ImGui::GetStyle().FramePadding.y});
+        ImGui::BeginChildFrame(ImGui::GetID("FieldValue"), ImVec2(PANEL_WIDTH, line_height*6.5f));
+        int i = 0;
+        for (const auto& val : values) {
+            auto height = ImGui::CalcTextSize(val.c_str()).y + ImGui::GetStyle().ItemSpacing.y;
+            ImGui::BeginChildFrame(ImGui::GetID(std::to_string(i++).c_str()), ImVec2(PANEL_WIDTH-7, height + ImGui::GetStyle().FramePadding.y));
+            ImGui::TextCentered(val.c_str());
+            ImGui::EndChildFrame();
+        }
+        ImGui::EndChildFrame();
+        ImGui::PopStyleVar();
+    }
 }
 
 void App::renderImGuiDepthSelector() {

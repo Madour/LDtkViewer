@@ -49,8 +49,8 @@ std::string ImGui::HoveredItemLabel() {
 
 void ImGui::Pad(float x, float y) {
     ImGui::Dummy({0, y});
-    ImGui::Dummy({0, 0});
-    ImGui::SameLine(x);
+    ImGui::Dummy({x, 0});
+    ImGui::SameLine();
 }
 
 std::string ImGui::IDtoString(unsigned int ID) {
