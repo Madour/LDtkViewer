@@ -312,7 +312,7 @@ void App::renderImGuiLeftPanel() {
             ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 15.f);
         }
         ImGui::Text("Levels");
-        ImGui::BeginListBox("Levels", {PANEL_WIDTH, 0});
+        ImGui::BeginListBox("Levels", {PANEL_WIDTH, ImGui::GetTextLineHeightWithSpacing() * 6.75f});
         for (const auto& level : active_project.drawables->worlds[0].levels.at(active_project.depth)) {
             bool is_selected = active_project.selected_level->name == level.data.name;
             ImGui::Selectable(("##"+level.data.iid.str()).c_str(), is_selected, ImGuiSelectableFlags_AllowItemOverlap);
@@ -342,7 +342,7 @@ void App::renderImGuiLeftPanel() {
             ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 15.f);
         }
         ImGui::Text("Entities");
-        ImGui::BeginListBox("Entities", {PANEL_WIDTH, 0});
+        ImGui::BeginListBox("Entities", {PANEL_WIDTH, ImGui::GetTextLineHeightWithSpacing() * 6.75f});
 
         if (active_project.selected_level != nullptr) {
             const auto& level = *active_project.selected_level;
@@ -382,7 +382,7 @@ void App::renderImGuiLeftPanel() {
         }
         if (active_project.selected_entity != nullptr) {
             ImGui::Text("Fields");
-            ImGui::BeginListBox("Fields", {PANEL_WIDTH, 0});
+            ImGui::BeginListBox("Fields", {PANEL_WIDTH, ImGui::GetTextLineHeightWithSpacing() * 6.75f});
 
             for (const auto& field : active_project.selected_entity->allFields()) {
                 auto is_selected = active_project.selected_field == &field;
