@@ -66,6 +66,7 @@ std::string LDtkProject::fieldTypeEnumToString(const ldtk::FieldType& type) {
         case ldtk::FieldType::ArrayEntityRef:
             return "ArrayEntityRef";
     }
+    return "Unknown";
 }
 
 bool LDtkProject::fieldTypeIsArray(const ldtk::FieldType& type) {
@@ -91,6 +92,7 @@ bool LDtkProject::fieldTypeIsArray(const ldtk::FieldType& type) {
         case ldtk::FieldType::ArrayEntityRef:
             return true;
     }
+    return false;
 }
 
 std::vector<std::string> LDtkProject::fieldValuesToString(const ldtk::FieldDef& def, const ldtk::Entity& entity) {
