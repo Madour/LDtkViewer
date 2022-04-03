@@ -95,14 +95,14 @@ private:
         in vec2 tex;
         in vec4 col;
 
-        out vec4 gl_FragColor;
+        out vec4 fragColor;
 
         void main() {
             vec4 tex_color = vec4(1.f, 1.f, 1.f, 1.f);
             if (tex.xy != vec2(-1, -1))
                 tex_color = texture(texture0, tex);
 
-            gl_FragColor = col * tex_color * color;
+            fragColor = col * tex_color * color;
         }
     );
 };
