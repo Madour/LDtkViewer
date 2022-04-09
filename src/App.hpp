@@ -52,10 +52,11 @@ private:
     LDtkProject* m_selected_project = nullptr;
 
     static constexpr auto vert_shader = GLSL(330 core,
-        uniform vec2 window_size = vec2(0.0, 0.0);
-        uniform vec2 texture_size = vec2(0.0, 0.0);
-        uniform vec3 transform = vec3(0.0, 0.0, 1.0);
-        uniform vec2 offset = vec2(0.0, 0.0);
+        precision highp float;
+        uniform vec2 window_size;
+        uniform vec2 texture_size;
+        uniform vec3 transform;
+        uniform vec2 offset;
 
         layout (location = 0) in vec2 i_pos;
         layout (location = 1) in vec2 i_tex;
@@ -88,8 +89,9 @@ private:
         }
     );
     static constexpr auto frag_shader = GLSL(330 core,
+        precision highp float;
         uniform sampler2D texture0;
-        uniform vec4 color = vec4(1.f, 1.f, 1.f, 1.f);
+        uniform vec4 color;
 
         in vec2 pos;
         in vec2 tex;

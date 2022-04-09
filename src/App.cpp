@@ -16,7 +16,10 @@
 constexpr float PANEL_WIDTH = 200.f;
 constexpr float BAR_HEIGHT = 30.f;
 
-App::App() : m_window(1280, 720, "LDtk World Viewer") {
+constexpr int WINDOW_WIDTH = 1366;
+constexpr int WINDOW_HEIGHT = 768;
+
+App::App() : m_window(WINDOW_WIDTH, WINDOW_HEIGHT, "LDtk World Viewer") {
     m_projects.emplace("", LDtkProject{});
     m_shader.load(vert_shader, frag_shader);
     initImGui();
@@ -51,6 +54,7 @@ void App::unloadLDtkFile(const char* path) {
 }
 
 void App::run() {
+#if !defined(EMSCRIPTEN)
     while (m_window.isOpen()) {
         while (auto event = m_window.nextEvent()) {
             processEvent(event.value());
@@ -67,6 +71,27 @@ void App::run() {
 
         m_window.display();
     }
+#else
+    struct AppContext {
+        App& app;
+    };
+    auto ctx = AppContext{*this};
+    auto main_loop = [](void* arg) {
+        auto* ctx = static_cast<AppContext*>(arg);
+        while (auto event = ctx->app.m_window.nextEvent()) {
+            ctx->app.processEvent(event.value());
+        }
+        if (ctx->app.projectOpened()) {
+            ctx->app.m_window.clear(ldtk2glm(ctx->app.getActiveProject().data->getBgColor()));
+            ctx->app.renderActiveProject();
+        } else {
+            ctx->app.m_window.clear({54.f/255.f, 60.f/255.f, 69.f/255.f});
+        }
+        ctx->app.renderImGui();
+        ctx->app.m_window.display();
+    };
+    emscripten_set_main_loop_arg(main_loop, &ctx, 0, EM_TRUE);
+#endif
 }
 
 bool App::projectOpened() {
@@ -105,12 +130,20 @@ void App::processEvent(sogl::Event& event) {
     static glm::vec<2, int> grab_pos;
 
     if (auto resize = event.as<sogl::Event::Resize>()) {
-        for (auto& [_, data] : m_projects)
+        for (auto& [_, data] : m_projects) {
             data.camera.setSize({resize->width, resize->height});
+        }
     }
     else if (auto drop = event.as<sogl::Event::Drop>()) {
-        for (auto& file : drop->files)
-            loadLDtkFile(file.c_str());
+        for (auto& file : drop->files) {
+#if defined(EMSCRIPTEN)
+            std::cout << "uploading file " << file << std::endl;
+#endif
+            std::filesystem::path filepath = file;
+            if (filepath.has_extension() && filepath.extension() == ".ldtk") {
+                loadLDtkFile(file.c_str());
+            }
+        }
     }
     else if (auto press = event.as<sogl::Event::KeyPress>()) {
         if (!ImGui::GetIO().WantCaptureKeyboard) {
@@ -198,7 +231,7 @@ void App::initImGui() {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui_ImplGlfw_InitForOpenGL(&m_window, true);
-    ImGui_ImplOpenGL3_Init("#version 330 core");
+    ImGui_ImplOpenGL3_Init();
 
     auto& style = ImGui::GetStyle();
 

@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en-us">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>LDtkViewer-Web</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        html {
+            background-color: rgb(54, 60, 69);
+        }
+        body {
+            background-color: #16181df9;
+            font-family: arial;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+
+        nav {
+            width: 100%;
+            height: 45px;
+            background-color: #16181d;
+        }
+
+        .emscripten {
+            margin: 0 auto;
+            padding-right: 0;
+            text-align: center;
+        }
+        .spinner {
+            box-sizing: content-box;
+            width: 25px;
+            height: 25px;
+            margin: 10px;
+            float: left;
+
+            -webkit-animation: rotation 0.8s linear infinite;
+            -moz-animation: rotation 0.8s linear infinite;
+            -o-animation: rotation 0.8s linear infinite;
+            animation: rotation 0.8s linear infinite;
+
+            border-left: 5px solid #ffcc00;
+            border-right: 5px solid #ffcc00;
+            border-bottom: 5px solid #ffcc00;
+            border-top: 5px solid #ffffdd;
+
+            border-radius: 100%;
+            background-color: #ffed82;
+        }
+
+        @-webkit-keyframes rotation {
+            from {-webkit-transform: rotate(0deg);}
+            to {-webkit-transform: rotate(360deg);}
+        }
+        @-moz-keyframes rotation {
+            from {-moz-transform: rotate(0deg);}
+            to {-moz-transform: rotate(360deg);}
+        }
+        @-o-keyframes rotation {
+            from {-o-transform: rotate(0deg);}
+            to {-o-transform: rotate(360deg);}
+        }
+        @keyframes rotation {
+            from {transform: rotate(0deg);}
+            to {transform: rotate(360deg);}
+        }
+
+        #fullscreen-btn {
+            margin: 10px;
+            float: right;
+            width: 125px;
+            height: 25px;
+        }
+        nav > #status-container {
+            display: block;
+            width: 450px;
+            height: 100%;
+            margin: 0 auto;
+            padding: 10px 0;
+        }
+
+        #status {
+            display: block;
+            margin: 0 auto;
+            font-weight: bold;
+            line-height: 21px;
+            color: #ffffdd;
+        }
+
+        #progress {
+            margin-bottom: 10px;
+            height: 10px;
+            width: 450px;
+            border-radius: 20px;
+            border: 0;
+            background: #ffffdd;
+        }
+        #progress::-moz-progress-bar {
+            background: #ffcc00;
+            border-radius: 20px;
+        }
+        #progress::-webkit-progress-bar {
+            background: #ffcc00;
+            border-radius: 20px;
+        }
+
+        canvas {
+            display: block;
+            border: 0 none;
+            background-color: #16181d;
+
+            width: 100vw;
+            height: 56.25vw; /* 100/56.25 = 1.778 */
+            max-height: calc(100vh - 90px);
+            max-width: calc(177.78vh - 90px); /* 16/9 = 1.778 */
+        }
+        canvas.fullscreen {
+            max-height: calc(100vh);
+            max-width: calc(177.78vh); /* 16/9 = 1.778 */
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div id='spinner' class="spinner"></div>
+    <input id="fullscreen-btn" type="button" value="Fullscreen">
+    <div id="status-container">
+        <div id="status" class="emscripten">Downloading...</div>
+        <progress  id="progress" class="emscripten" value="0" max="100"></progress>
+    </div>
+</nav>
+
+<canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
+
+<script type='text/javascript'>
+    var spinnerElement = document.getElementById('spinner');
+    var statusElement = document.getElementById('status');
+    var progressElement = document.getElementById('progress');
+    var buttonElement = document.getElementById("fullscreen-btn");
+    var canvasElement = document.getElementById('canvas');
+
+    buttonElement.addEventListener('click', function(e) {
+        e.preventDefault();
+        Module.requestFullscreen(false, true)
+    })
+
+    async function recursiveOnDrop(event) {
+        event.preventDefault();
+        if (!event.dataTransfer || !event.dataTransfer.files || event.dataTransfer.files.length == 0) {
+            return;
+        }
+
+        var files_list = [];
+        var drop_dir = '.ldtkviewer_files';
+        FS.createPath('/', drop_dir);
+
+        async function loadFile(item, parent) {
+            return new Promise(function(resolve, reject) {
+                item.file(function (file) {
+                    file.path = parent;
+                    files_list.push(file);
+                    resolve();
+                });
+            });
+        }
+
+        async function loadFolder(item, parent, traverse_func) {
+            return new Promise(function(resolve, reject) {
+                FS.createPath('/'+drop_dir+'/'+parent, item.name);
+                var path = parent + item.name + "/";
+                item.createReader().readEntries(async function(entries) {
+                    for (let i = 0; i < entries.length; ++i) {
+                        await traverse_func(entries[i], path);
+                    }
+                    resolve();
+                });
+            });
+        }
+
+        async function traverseFileTree(item, path) {
+            path = path || "";
+            if (item.isDirectory) {
+                await loadFolder(item, path, traverseFileTree);
+            }
+            else if (item.isFile) {
+                await loadFile(item, path);
+            }
+        }
+
+        const items = event.dataTransfer.items;
+        for (let i = 0; i < items.length; ++i) {
+            var item = items[i].webkitGetAsEntry();
+            if (item) {
+                await traverseFileTree(item);
+            }
+        }
+
+        var filenames = _malloc(files_list.length*4);
+        var filenamesArray = [];
+
+        // Read and save the files to emscripten's FS
+        var written = 0;
+
+        function save(file, index) {
+            var path = '/' + drop_dir + '/' + file.path + file.name;
+            var reader = new FileReader();
+            reader.onloadend = (e) => {
+                if (reader.readyState !== 2) { // not DONE
+                    ++written;
+                    out('failed to read dropped file: ' + file.path + file.name + ': ' + reader.error);
+                    return;
+                }
+
+                var data = e.target.result;
+                FS.writeFile(path, new Uint8Array(data));
+                if (++written === files_list.length) {
+                    getWasmTableEntry(GLFW.active.dropFunc)(GLFW.active.id, files_list.length, filenames);
+
+                    for (let i = 0; i < filenamesArray.length; ++i) {
+                        _free(filenamesArray[i]);
+                    }
+                    _free(filenames);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+
+            var filename = allocateUTF8(path);
+            filenamesArray.push(filename);
+            setValue(filenames + index*4, filename, 'i8*');
+        }
+
+        for (let i = 0; i < files_list.length; ++i) {
+            save(files_list[i], i);
+        }
+        return false;
+    }
+
+    var Module = {
+        preRun: [],
+        postRun: [function() {
+            // replace the default file drop callback by our own callback
+            this.canvas.removeEventListener('drop', this.GLFW.onDrop, true);
+            this.canvas.addEventListener('drop', recursiveOnDrop, true);
+        }],
+        print: (function() {
+            return function(text) {
+                if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+                console.log(text);
+            };
+        })(),
+        canvas: (function() {
+            canvasElement.addEventListener(
+                "webglcontextlost",
+                function(e) {
+                    alert('WebGL context lost. Please reload the page.');
+                    e.preventDefault();
+                },
+                false
+            );
+            return canvas;
+        })(),
+        onFullScreen: function (is_fullscreen) {
+            canvasElement.classList.toggle("fullscreen");
+        },
+        setStatus: function(text) {
+            if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
+            if (text === Module.setStatus.last.text) return;
+            var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+            var now = Date.now();
+            console.log(text, m, now);
+            if (m && now - Module.setStatus.last.time < 30) return; // if this is a progress update, skip it if too soon
+            Module.setStatus.last.time = now;
+            Module.setStatus.last.text = text;
+            if (m) {
+                text = m[1];
+                progressElement.value = parseInt(m[2])*100;
+                progressElement.max = parseInt(m[4])*100;
+                progressElement.hidden = false;
+                spinnerElement.hidden = false;
+            } else {
+                progressElement.value = null;
+                progressElement.max = null;
+                progressElement.hidden = true;
+                if (!text) spinnerElement.style.display = 'none';
+            }
+            statusElement.innerHTML = text;
+        },
+        totalDependencies: 0,
+        monitorRunDependencies: function(left) {
+            this.totalDependencies = Math.max(this.totalDependencies, left);
+            Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+        }
+    };
+    Module.setStatus('Downloading...');
+    window.onerror = function(event) {
+        // TODO: do not warn on ok events like simulating an infinite loop or exitStatus
+        Module.setStatus('Exception thrown, see JavaScript console');
+        spinnerElement.style.display = 'none';
+        Module.setStatus = function(text) {
+            if (text) console.error('[post-exception status] ' + text);
+        };
+    };
+</script>
+
+{{{ SCRIPT }}}
+
+</body>
+</html>
