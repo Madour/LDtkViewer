@@ -276,6 +276,7 @@ void App::renderImGui() {
     renderImGuiTabBar();
     renderImGuiLeftPanel();
     renderImGuiDepthSelector();
+    renderImGuiInstructions();
     ImGui::Render();
 
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -519,9 +520,10 @@ void App::renderImGuiDepthSelector() {
         auto& world = *active_project.rendered_world;
         if (world.levels.size() > 1) {
             auto line_height = ImGui::GetTextLineHeightWithSpacing();
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {10.f, 10.f});
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.f);
             ImGui::SetNextWindowSize({45, 20.f + static_cast<float>(world.levels.size()) * line_height});
             ImGui::SetNextWindowPos({PANEL_WIDTH + 15, BAR_HEIGHT + 15});
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {10.f, 10.f});
             ImGui::Begin("DepthSelector", nullptr, imgui_window_flags);
 
             for (auto it = world.levels.rbegin(); it != world.levels.rend(); it++) {
@@ -539,6 +541,28 @@ void App::renderImGuiDepthSelector() {
             }
             ImGui::End();
             ImGui::PopStyleVar();
+            ImGui::PopStyleVar();
         }
+    }
+}
+
+void App::renderImGuiInstructions() {
+    if (!projectOpened()) {
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.f);
+        ImGui::SetNextWindowSize({400, 200});
+        ImGui::SetNextWindowPos({PANEL_WIDTH + (static_cast<float>(m_window.getSize().x) - PANEL_WIDTH - 400) / 2,
+                                 BAR_HEIGHT + (static_cast<float>(m_window.getSize().y) - BAR_HEIGHT - 200) / 2});
+        ImGui::Begin("Instructions", nullptr, imgui_window_flags);
+#if defined(EMSCRIPTEN)
+        ImGui::Pad(0, 80);
+        ImGui::TextCentered("Drag and drop your LDtk projects");
+        ImGui::TextCentered("and all the needed assets here");
+        ImGui::TextCentered("(you can drop an entire folder)");
+#else
+        ImGui::Pad(0, 90);
+        ImGui::TextCentered("Drag and drop your LDtk projects here");
+#endif
+        ImGui::End();
+        ImGui::PopStyleVar();
     }
 }

@@ -40,6 +40,7 @@ private:
     void renderImGuiLeftPanel();
     void renderImGuiLeftPanel_FieldValues(const ldtk::FieldDef& field, const std::vector<std::string>& values);
     void renderImGuiDepthSelector();
+    void renderImGuiInstructions();
     static constexpr auto imgui_window_flags = ImGuiWindowFlags_NoMove
                                              | ImGuiWindowFlags_NoResize
                                              | ImGuiWindowFlags_NoDecoration;
