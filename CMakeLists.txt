@@ -7,7 +7,7 @@ include(FetchContent)
 FetchContent_Declare(
         sogl
         GIT_REPOSITORY https://github.com/Madour/sogl
-        GIT_TAG 0.1
+        GIT_TAG dev-0.2
 )
 FetchContent_MakeAvailable(sogl)
 
@@ -39,7 +39,7 @@ endif()
 
 
 file(GLOB_RECURSE SRC src/*.cpp)
-file(GLOB_RECURSE INC src/*.hpp)
+file(GLOB_RECURSE INC src/*.hpp src/*.h)
 
 add_executable(LDtkViewer ${SRC} ${INC})
 target_include_directories(LDtkViewer PRIVATE src .)
