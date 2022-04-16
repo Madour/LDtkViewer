@@ -147,9 +147,9 @@ void App::processEvent(sogl::Event& event) {
     }
     else if (auto press = event.as<sogl::Event::KeyPress>()) {
         if (!ImGui::GetIO().WantCaptureKeyboard) {
-            if (press->key == GLFW_KEY_ESCAPE) {
+            if (press->key == sogl::Key::Escape) {
                 m_window.close();
-            } else if (press->key == GLFW_KEY_F5) {
+            } else if (press->key == sogl::Key::F5) {
                 if (projectOpened()) {
                     refreshActiveProject();
                 }
@@ -158,14 +158,14 @@ void App::processEvent(sogl::Event& event) {
     }
     else if (auto mouse_press = event.as<sogl::Event::MousePress>()) {
         if (!ImGui::GetIO().WantCaptureMouse) {
-            if (mouse_press->button == GLFW_MOUSE_BUTTON_LEFT) {
+            if (mouse_press->button == sogl::MouseButton::Left) {
                 camera_grabbed = true;
                 grab_pos = m_window.getMousePosition();
             }
         }
     }
     else if (auto mouse_release = event.as<sogl::Event::MouseRelease>()) {
-        if (mouse_release->button == GLFW_MOUSE_BUTTON_LEFT) {
+        if (mouse_release->button == sogl::MouseButton::Left) {
             camera_grabbed = false;
         }
     }
