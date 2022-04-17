@@ -429,8 +429,8 @@ void App::renderImGuiLeftPanel() {
                     auto is_selected = active_project.selected_entity == &entity;
                     ImGui::Selectable(("##" + entity.data.iid.str()).c_str(), is_selected);
                     if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
-                        auto posx = entity.data.getPosition().x + level.bounds.pos.x;
-                        auto posy = entity.data.getPosition().y + level.bounds.pos.y;
+                        auto posx = entity.bounds.pos.x + entity.bounds.size.x * 0.5f;
+                        auto posy = entity.bounds.pos.y + entity.bounds.size.y * 0.5f;
                         active_project.selected_entity = &entity;
                         active_project.selected_field = nullptr;
                         getCamera().centerOn(static_cast<float>(posx), static_cast<float>(posy));

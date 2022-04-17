@@ -29,11 +29,12 @@ public:
         explicit Entity(const ldtk::Entity& Entity);
         const ldtk::Entity& data;
         std::vector<Field> fields;
+        Rect bounds;
     };
 
     struct Layer {
         explicit Layer(const ldtk::Layer& layer, const ldtk::FilePath& filepath);
-        void render(sogl::Shader& shader) const;
+        void render(sogl::Shader& shader, bool render_entities=false) const;
         const ldtk::Layer& data;
         std::vector<Entity> entities;
     private:

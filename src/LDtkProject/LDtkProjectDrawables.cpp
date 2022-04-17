@@ -5,7 +5,8 @@
 
 #include "ldtk2glm.hpp"
 
-glm::vec2 level_offset = {0, 0};
+static glm::vec2 level_offset = {0, 0};
+static glm::vec2 level_pos = {0, 0};
 
 LDtkProjectDrawables::World::World(const ldtk::World& world, const ldtk::FilePath& filepath) :
 data(world) {
@@ -26,6 +27,7 @@ LDtkProjectDrawables::Level::Level(const ldtk::Level& level, const ldtk::FilePat
 data(level) {
     bounds.pos.x = level.position.x + level_offset.x;
     bounds.pos.y = level.position.y + level_offset.y;
+    level_pos = bounds.pos;
     bounds.size.x = level.size.x;
     bounds.size.y = level.size.y;
     layers.reserve(level.allLayers().size());
@@ -40,8 +42,6 @@ data(layer) {
         auto proj_dir = filepath.directory();
         m_texture = &TextureManager::get(proj_dir + layer.getTileset().path);
     }
-
-    glm::vec2 level_pos = level_offset + glm::vec2(ldtk2glm(layer.level->position));
 
     m_va_tiles.reserve(layer.allTiles().size() * 4);
 
@@ -81,7 +81,7 @@ data(layer) {
     }
 }
 
-void LDtkProjectDrawables::Layer::render(sogl::Shader& shader) const {
+void LDtkProjectDrawables::Layer::render(sogl::Shader& shader, bool render_entities) const {
     if (m_texture != nullptr) {
         shader.setUniform("texture_size", glm::vec2(m_texture->getSize()));
         m_texture->bind();
@@ -91,8 +91,10 @@ void LDtkProjectDrawables::Layer::render(sogl::Shader& shader) const {
     m_va_tiles.bind();
     m_va_tiles.render();
 
-    m_va_entities.bind();
-    m_va_entities.render();
+    if (render_entities) {
+        m_va_entities.bind();
+        m_va_entities.render();
+    }
 }
 
 LDtkProjectDrawables::Entity::Entity(const ldtk::Entity& entity) :
@@ -101,6 +103,8 @@ data(entity) {
     for (const auto& field : entity.allFields()) {
         fields.emplace_back(field);
     }
+    bounds.pos = level_pos + glm::vec2(ldtk2glm(entity.getPosition()));
+    bounds.size = ldtk2glm(entity.getSize());
 }
 
 LDtkProjectDrawables::Field::Field(const ldtk::FieldDef& field) : data(field)
