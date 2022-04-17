@@ -21,6 +21,7 @@ public:
     Camera2D camera;
     int depth;
     std::string path;
+    bool render_entities = false;
 
     const LDtkProjectDrawables::World* selected_world = nullptr;
     const LDtkProjectDrawables::Level* selected_level = nullptr;
