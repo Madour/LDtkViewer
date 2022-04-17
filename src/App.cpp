@@ -200,7 +200,7 @@ void App::renderActiveProject() {
     m_shader.setUniform("offset", OFFSET);
     m_shader.setUniform("transform", getCamera().getTransform());
 
-    const auto& world = *active_project.rendered_world;
+    const auto& world = *active_project.selected_world;
     for (const auto& [depth, levels] : world.levels) {
         if (depth > active_project.depth)
             continue;
@@ -212,7 +212,7 @@ void App::renderActiveProject() {
                 if ((mouse_pos.x >= level.bounds.pos.x && mouse_pos.y >= level.bounds.pos.y
                   && mouse_pos.x < level.bounds.pos.x + level.bounds.size.x
                   && mouse_pos.y < level.bounds.pos.y + level.bounds.size.y)
-                  || level.data.name == active_project.selected_level->name) {
+                  || &level == active_project.selected_level) {
                     m_shader.setUniform("color", glm::vec4(1.f, 1.f, 1.f, 1.f));
                 } else {
                     m_shader.setUniform("color", glm::vec4(0.9f, 0.9f, 0.9f, 1.f));
@@ -356,11 +356,10 @@ void App::renderImGuiLeftPanel() {
             ImGui::SetNextItemWidth(PANEL_WIDTH*0.75f);
             if (ImGui::BeginCombo("##WorldsSelect", nullptr, ImGuiComboFlags_CustomPreview)) {
                 for (const auto& world : active_project.drawables->worlds) {
-                    bool is_selected = active_project.selected_world->getName() == world.data.getName();
+                    bool is_selected = active_project.selected_world == &world;
                     if (ImGui::Selectable(("##"+world.data.getName()).c_str(), is_selected)) {
-                        active_project.rendered_world = &world;
-                        active_project.selected_world = &world.data;
-                        active_project.selected_level = &active_project.selected_world->allLevels()[0];
+                        active_project.selected_world = &world;
+                        active_project.selected_level = &world.levels.at(0)[0];
                         active_project.selected_entity = nullptr;
                         active_project.selected_field = nullptr;
                     }
@@ -376,9 +375,9 @@ void App::renderImGuiLeftPanel() {
             ImGui::PopStyleColor();
             if (ImGui::BeginComboPreview()) {
                 if (ImGui::IsItemHovered()) {
-                    ImGui::TextCenteredColored(colors::text_black, active_project.selected_world->getName().c_str());
+                    ImGui::TextCenteredColored(colors::text_black, active_project.selected_world->data.getName().c_str());
                 } else {
-                    ImGui::TextCenteredColored(colors::text_white, active_project.selected_world->getName().c_str());
+                    ImGui::TextCenteredColored(colors::text_white, active_project.selected_world->data.getName().c_str());
                 }
                 ImGui::EndComboPreview();
             }
@@ -392,11 +391,11 @@ void App::renderImGuiLeftPanel() {
         }
         ImGui::Text("Levels");
         ImGui::BeginListBox("Levels", {PANEL_WIDTH, ImGui::GetTextLineHeightWithSpacing() * 6.75f});
-        for (const auto& level : active_project.rendered_world->levels.at(active_project.depth)) {
-            bool is_selected = active_project.selected_level->name == level.data.name;
+        for (const auto& level : active_project.selected_world->levels.at(active_project.depth)) {
+            bool is_selected = active_project.selected_level == &level;
             ImGui::Selectable(("##"+level.data.iid.str()).c_str(), is_selected, ImGuiSelectableFlags_AllowItemOverlap);
             if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
-                active_project.selected_level = &level.data;
+                active_project.selected_level = &level;
                 auto level_center = level.bounds.pos + level.bounds.size / 2.f;
                 getCamera().centerOn(level_center.x, level_center.y);
                 active_project.selected_entity = nullptr;
@@ -425,25 +424,25 @@ void App::renderImGuiLeftPanel() {
 
         if (active_project.selected_level != nullptr) {
             const auto& level = *active_project.selected_level;
-            for (const auto& layer : level.allLayers()) {
-                for (const auto& entity : layer.allEntities()) {
+            for (const auto& layer : level.layers) {
+                for (const auto& entity : layer.entities) {
                     auto is_selected = active_project.selected_entity == &entity;
-                    ImGui::Selectable(("##" + entity.iid.str()).c_str(), is_selected);
+                    ImGui::Selectable(("##" + entity.data.iid.str()).c_str(), is_selected);
                     if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
-                        auto posx = entity.getPosition().x + level.position.x;
-                        auto posy = entity.getPosition().y + level.position.y;
+                        auto posx = entity.data.getPosition().x + level.bounds.pos.x;
+                        auto posy = entity.data.getPosition().y + level.bounds.pos.y;
                         active_project.selected_entity = &entity;
                         active_project.selected_field = nullptr;
                         getCamera().centerOn(static_cast<float>(posx), static_cast<float>(posy));
                     }
                     if (ImGui::IsItemHovered()) {
-                        ImGui::SetTooltip("%s", entity.iid.str().c_str());
+                        ImGui::SetTooltip("%s", entity.data.iid.str().c_str());
                     }
                     ImGui::SameLine();
                     if (is_selected || ImGui::IsItemHovered())
-                        ImGui::TextCenteredColored(colors::text_black, entity.getName().c_str());
+                        ImGui::TextCenteredColored(colors::text_black, entity.data.getName().c_str());
                     else
-                        ImGui::TextCenteredColored(colors::text_white, entity.getName().c_str());
+                        ImGui::TextCenteredColored(colors::text_white, entity.data.getName().c_str());
                 }
             }
         }
@@ -462,18 +461,18 @@ void App::renderImGuiLeftPanel() {
             ImGui::Text("Fields");
             ImGui::BeginListBox("Fields", {PANEL_WIDTH, ImGui::GetTextLineHeightWithSpacing() * 6.75f});
 
-            for (const auto& field : active_project.selected_entity->allFields()) {
+            for (const auto& field : active_project.selected_entity->fields) {
                 auto is_selected = active_project.selected_field == &field;
-                ImGui::Selectable(("##" + std::to_string(int(field.type)) + " " + field.name).c_str(), is_selected);
+                ImGui::Selectable(("##" + std::to_string(int(field.data.type)) + " " + field.data.name).c_str(), is_selected);
                 if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
                     active_project.selected_field = &field;
-                    active_project.selected_field_values = LDtkProject::fieldValuesToString(field, *active_project.selected_entity);
+                    active_project.selected_field_values = LDtkProject::fieldValuesToString(field.data, active_project.selected_entity->data);
                 }
                 ImGui::SameLine();
                 if (is_selected || ImGui::IsItemHovered())
-                    ImGui::TextCenteredColored(colors::text_black, field.name.c_str());
+                    ImGui::TextCenteredColored(colors::text_black, field.data.name.c_str());
                 else
-                    ImGui::TextCenteredColored(colors::text_white, field.name.c_str());
+                    ImGui::TextCenteredColored(colors::text_white, field.data.name.c_str());
             }
 
             ImGui::EndListBox();
@@ -483,7 +482,7 @@ void App::renderImGuiLeftPanel() {
             }
 
             if (active_project.selected_field != nullptr) {
-                renderImGuiLeftPanel_FieldValues(*active_project.selected_field, active_project.selected_field_values);
+                renderImGuiLeftPanel_FieldValues(active_project.selected_field->data, active_project.selected_field_values);
             }
         }
     }
@@ -517,7 +516,7 @@ void App::renderImGuiLeftPanel_FieldValues(const ldtk::FieldDef& field, const st
 void App::renderImGuiDepthSelector() {
     if (projectOpened()) {
         auto& active_project = getActiveProject();
-        auto& world = *active_project.rendered_world;
+        auto& world = *active_project.selected_world;
         if (world.levels.size() > 1) {
             auto line_height = ImGui::GetTextLineHeightWithSpacing();
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {10.f, 10.f});
@@ -531,7 +530,7 @@ void App::renderImGuiDepthSelector() {
                 ImGui::Selectable(("##"+std::to_string(depth)).c_str(), active_project.depth == depth);
                 if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
                     active_project.depth = depth;
-                    active_project.selected_level = &world.levels.at(depth)[0].data;
+                    active_project.selected_level = &world.levels.at(depth)[0];
                 }
                 ImGui::SameLine();
                 if (active_project.depth == depth || ImGui::IsItemHovered())

@@ -14,7 +14,7 @@ FetchContent_MakeAvailable(sogl)
 FetchContent_Declare(
         LDtkLoader
         GIT_REPOSITORY https://github.com/Madour/LDtkLoader
-        GIT_TAG 1.0
+        GIT_TAG 1.1
 )
 FetchContent_MakeAvailable(LDtkLoader)
 
