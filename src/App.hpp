@@ -10,6 +10,7 @@
 #include <LDtkLoader/World.hpp>
 #include <sogl/sogl.hpp>
 
+#include <functional>
 #include <map>
 #include <vector>
 #include <string>
@@ -38,9 +39,16 @@ private:
     void renderImGui();
     void renderImGuiTabBar();
     void renderImGuiLeftPanel();
-    void renderImGuiLeftPanel_FieldValues(const ldtk::FieldDef& field, const std::vector<std::string>& values);
+    void renderImGuiLeftPanel_WorldsSelector();
+    void renderImGuiLeftPanel_LevelsList();
+    void renderImGuiLeftPanel_EntitiesList();
+    void renderImGuiLeftPanel_FieldsList();
+    void renderImGuiLeftPanel_FieldValues();
     void renderImGuiDepthSelector();
     void renderImGuiInstructions();
+
+    void decorateImGuiExpandableScrollbar(const char* frame, const char* id, const std::function<void(App*)>& fn);
+
     static constexpr auto imgui_window_flags = ImGuiWindowFlags_NoMove
                                              | ImGuiWindowFlags_NoResize
                                              | ImGuiWindowFlags_NoDecoration;
