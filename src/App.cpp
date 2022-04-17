@@ -212,7 +212,7 @@ void App::renderActiveProject() {
                 m_shader.setUniform("color", glm::vec4(0.8f, 0.8f, 0.8f, opacity));
             }
             for (auto layer_it = level.layers.rbegin(); layer_it < level.layers.rend(); layer_it++)
-                layer_it->render(m_shader);
+                layer_it->render(m_shader, active_project.render_entities);
         }
     }
 }
@@ -251,6 +251,7 @@ void App::initImGui() {
     style.Colors[ImGuiCol_Button] = ImColor(colors::btn_bg);
     style.Colors[ImGuiCol_ButtonHovered] = ImColor(colors::btn_hover);
     style.Colors[ImGuiCol_ButtonActive] = ImColor(colors::btn_active);
+    style.Colors[ImGuiCol_CheckMark] = ImColor(colors::btn_hover);
 
     style.Colors[ImGuiCol_ScrollbarBg] = ImColor(colors::scrollbar_bg);
     style.Colors[ImGuiCol_ScrollbarGrab] = ImColor(colors::scrollbar_body);
@@ -324,7 +325,7 @@ void App::renderImGuiLeftPanel() {
     ImGui::Begin(frame_name, nullptr, imgui_window_flags);
 
     // demo window
-    ImGui::Checkbox("Demo Window", &demo_open);
+    // ImGui::Checkbox("Demo Window", &demo_open);
     // ImGui::TextCentered(ImGui::HoveredItemLabel().c_str());
 
     // Software Title + version
@@ -367,10 +368,12 @@ void App::renderImGuiLeftPanel() {
 
 void App::renderImGuiLeftPanel_WorldsSelector() {
     auto& active_project = getActiveProject();
-    ImGui::Pad(PANEL_WIDTH*0.125f, 14);
+    ImGui::Pad(0, 14);
     ImGui::PushStyleColor(ImGuiCol_Text, colors::text_black);
+    ImGui::PushStyleColor(ImGuiCol_Button, colors::selected);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {5, 5});
-    ImGui::SetNextItemWidth(PANEL_WIDTH*0.75f);
+    ImGui::SetNextItemWidth(PANEL_WIDTH * 0.75f);
+    ImGui::SetCursorPosX((PANEL_WIDTH - PANEL_WIDTH*0.75f) * 0.5f);
     if (ImGui::BeginCombo("##WorldsSelect", nullptr, ImGuiComboFlags_CustomPreview)) {
         for (const auto& world : active_project.drawables->worlds) {
             bool is_selected = active_project.selected_world == &world;
@@ -390,6 +393,7 @@ void App::renderImGuiLeftPanel_WorldsSelector() {
     }
     ImGui::PopStyleVar();
     ImGui::PopStyleColor();
+    ImGui::PopStyleColor();
     if (ImGui::BeginComboPreview()) {
         if (ImGui::IsItemHovered()) {
             ImGui::TextCenteredColored(colors::text_black, active_project.selected_world->data.getName().c_str());
@@ -402,6 +406,7 @@ void App::renderImGuiLeftPanel_WorldsSelector() {
 
 void App::renderImGuiLeftPanel_LevelsList() {
     auto& active_project = getActiveProject();
+    ImGui::AlignTextToFramePadding();
     ImGui::Text("Levels");
     ImGui::BeginListBox("Levels", {PANEL_WIDTH, ImGui::GetTextLineHeightWithSpacing() * 6.75f});
 
@@ -426,42 +431,56 @@ void App::renderImGuiLeftPanel_LevelsList() {
 }
 
 void App::renderImGuiLeftPanel_EntitiesList() {
-    static bool render_entities;
     auto& active_project = getActiveProject();
-    ImGui::Text("Entities");
-    ImGui::Checkbox("##RenderEntities", &render_entities);
-    ImGui::BeginListBox("Entities", {PANEL_WIDTH, ImGui::GetTextLineHeightWithSpacing() * 6.75f});
 
-    if (active_project.selected_level != nullptr) {
-        const auto& level = *active_project.selected_level;
-        for (const auto& layer : level.layers) {
-            for (const auto& entity : layer.entities) {
-                auto is_selected = active_project.selected_entity == &entity;
-                ImGui::Selectable(("##" + entity.data.iid.str()).c_str(), is_selected);
-                if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
-                    auto posx = entity.bounds.pos.x + entity.bounds.size.x * 0.5f;
-                    auto posy = entity.bounds.pos.y + entity.bounds.size.y * 0.5f;
-                    active_project.selected_entity = &entity;
-                    active_project.selected_field = nullptr;
-                    getCamera().centerOn(static_cast<float>(posx), static_cast<float>(posy));
+    ImGui::AlignTextToFramePadding();
+    ImGui::Text("Entities");
+    ImGui::SameLine(PANEL_WIDTH - 60);
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {0, 1});
+    if (ImGui::Button(active_project.render_entities ? "Hide" : "Show", {50, ImGui::GetTextLineHeightWithSpacing()})) {
+        active_project.render_entities = !active_project.render_entities;
+    }
+    ImGui::PopStyleVar();
+    if (active_project.render_entities) {
+        ImGui::BeginListBox("Entities", {PANEL_WIDTH, ImGui::GetTextLineHeightWithSpacing() * 6.75f});
+
+        if (active_project.selected_level != nullptr) {
+            const auto& level = *active_project.selected_level;
+            for (const auto& layer : level.layers) {
+                for (const auto& entity : layer.entities) {
+                    auto is_selected = active_project.selected_entity == &entity;
+                    ImGui::Selectable(("##" + entity.data.iid.str()).c_str(), is_selected);
+                    if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+                        auto posx = entity.bounds.pos.x + entity.bounds.size.x * 0.5f;
+                        auto posy = entity.bounds.pos.y + entity.bounds.size.y * 0.5f;
+                        active_project.selected_entity = &entity;
+                        active_project.selected_field = nullptr;
+                        getCamera().centerOn(static_cast<float>(posx), static_cast<float>(posy));
+                    }
+                    if (ImGui::IsItemHovered()) {
+                        ImGui::SetTooltip("%s", entity.data.iid.str().c_str());
+                    }
+                    ImGui::SameLine();
+                    if (is_selected || ImGui::IsItemHovered())
+                        ImGui::TextCenteredColored(colors::text_black, entity.data.getName().c_str());
+                    else
+                        ImGui::TextCenteredColored(colors::text_white, entity.data.getName().c_str());
                 }
-                if (ImGui::IsItemHovered()) {
-                    ImGui::SetTooltip("%s", entity.data.iid.str().c_str());
-                }
-                ImGui::SameLine();
-                if (is_selected || ImGui::IsItemHovered())
-                    ImGui::TextCenteredColored(colors::text_black, entity.data.getName().c_str());
-                else
-                    ImGui::TextCenteredColored(colors::text_white, entity.data.getName().c_str());
             }
         }
+
+        ImGui::EndListBox();
+    }
+    else {
+        active_project.selected_entity = nullptr;
+        active_project.selected_field = nullptr;
     }
 
-    ImGui::EndListBox();
 }
 
 void App::renderImGuiLeftPanel_FieldsList() {
     auto& active_project = getActiveProject();
+    ImGui::AlignTextToFramePadding();
     ImGui::Text("Fields");
     ImGui::BeginListBox("Fields", {PANEL_WIDTH, ImGui::GetTextLineHeightWithSpacing() * 6.75f});
 
@@ -487,6 +506,7 @@ void App::renderImGuiLeftPanel_FieldValues() {
     const auto& field = active_project.selected_field->data;
     const auto& values = active_project.selected_field_values;
 
+    ImGui::AlignTextToFramePadding();
     ImGui::Text("%s", (LDtkProject::fieldTypeEnumToString(field.type) + " field").c_str());
     if (!LDtkProject::fieldTypeIsArray(field.type)) {
         auto height = ImGui::CalcTextSize(values.at(0).c_str()).y + ImGui::GetStyle().ItemSpacing.y;

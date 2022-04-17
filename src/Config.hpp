@@ -17,9 +17,9 @@ namespace colors {
     constexpr auto frame_bg = IM_COL32(0x2e, 0x33, 0x3f, 0xa8);
     constexpr auto tab_bg = IM_COL32(0x34, 0x3c, 0x4f, 0xff);
 
-    constexpr auto btn_bg = selected;
-    constexpr auto btn_hover = IM_COL32(0xff, 0x86, 0x2a, 0xff);
-    constexpr auto btn_active = IM_COL32(0xfa, 0x36, 0x0f, 0xff);
+    constexpr auto btn_bg = IM_COL32(0x84, 0x84, 0x84, 0xff);
+    constexpr auto btn_hover = IM_COL32(0xe6, 0x76, 0x2b, 0xff);
+    constexpr auto btn_active = IM_COL32(0xe1, 0x51, 0x14, 0xff);
 
     constexpr auto scrollbar_bg = transparent;
     constexpr auto scrollbar_body = selected;
