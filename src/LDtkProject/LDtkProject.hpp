@@ -22,13 +22,11 @@ public:
     int depth;
     std::string path;
 
-    const ldtk::World* selected_world = nullptr;
-    const ldtk::Level* selected_level = nullptr;
-    const ldtk::Entity* selected_entity = nullptr;
-    const ldtk::FieldDef* selected_field = nullptr;
+    const LDtkProjectDrawables::World* selected_world = nullptr;
+    const LDtkProjectDrawables::Level* selected_level = nullptr;
+    const LDtkProjectDrawables::Entity* selected_entity = nullptr;
+    const LDtkProjectDrawables::Field* selected_field = nullptr;
     std::vector<std::string> selected_field_values;
-
-    const LDtkProjectDrawables::World* rendered_world = nullptr;
 
     std::unique_ptr<ldtk::Project> data = nullptr;
     std::unique_ptr<LDtkProjectDrawables> drawables = nullptr;

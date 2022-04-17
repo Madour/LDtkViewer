@@ -21,9 +21,8 @@ bool LDtkProject::load(const char* a_path) {
     drawables->name = data->getFilePath().filename();
     for (const auto& world : data->allWorlds())
         drawables->worlds.emplace_back(world, project->getFilePath());
-    selected_world = &data->allWorlds()[0];
-    selected_level = &selected_world->allLevels()[0];
-    rendered_world = &drawables->worlds[0];
+    selected_world = &drawables->worlds[0];
+    selected_level = &selected_world->levels.at(0)[0];
     return true;
 }
 
