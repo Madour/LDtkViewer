@@ -1,7 +1,8 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.15)
 project(LDtkViewer)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 include(FetchContent)
 FetchContent_Declare(
@@ -17,14 +18,6 @@ FetchContent_Declare(
         GIT_TAG 1.1
 )
 FetchContent_MakeAvailable(LDtkLoader)
-
-if(MSVC)
-    add_compile_options(
-            $<$<CONFIG:>:/MD> #---------|
-            $<$<CONFIG:Debug>:/MDd> #---|-- Statically link the runtime libraries
-            $<$<CONFIG:Release>:/MD> #--|
-    )
-endif()
 
 file(GLOB_RECURSE imgui_SRC imgui/*.cpp)
 file(GLOB_RECURSE imgui_INC imgui/*.h)
