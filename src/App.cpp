@@ -43,7 +43,7 @@ void App::unloadLDtkFile(const char* path) {
     if (m_projects.count(path)) {
         const auto selected_path = m_selected_project->path;
         m_projects.erase(path);
-        if (m_projects.size() > 1) {
+        if (!m_projects.empty()) {
             if (selected_path == path)
                 m_selected_project = &m_projects.rbegin()->second;
         } else {
@@ -293,13 +293,11 @@ void App::renderImGuiTabBar() {
             ImGui::PushStyleColor(ImGuiCol_Text, colors::text_black);
         }
         if (ImGui::BeginTabItem(label.c_str(), &worlds_tabs[path])) {
+            m_selected_project = &m_projects.at(path);
             ImGui::EndTabItem();
         }
         if (is_selected || is_hovered) {
             ImGui::PopStyleColor();
-        }
-        if (ImGui::IsItemActivated()) {
-            m_selected_project = &m_projects.at(path);
         }
     }
     for (auto& [path, open] : worlds_tabs) {
