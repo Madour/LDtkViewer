@@ -116,18 +116,3 @@
 //#define IMGUI_DEBUG_PARANOID
 
 //---- Tip: You can add extra functions within the ImGui:: namespace, here or in your own headers files.
-
-#include <string>
-
-namespace ImGui
-{
-    void TextCentered(const char* text, float width=0.f);
-    void TextCenteredColored(unsigned color, const char* text, float width=0.f);
-
-    std::string HoveredItemLabel();
-
-    void Pad(float x, float y);
-
-    std::string IDtoString(unsigned int ID);
-}
-
