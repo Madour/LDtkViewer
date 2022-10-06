@@ -40,6 +40,7 @@ private:
     void renderImGuiTabBar();
     void renderImGuiLeftPanel();
     void renderImGuiLeftPanel_WorldsSelector();
+    void renderImGuiLeftPanel_SearchBar();
     void renderImGuiLeftPanel_LevelsList();
     void renderImGuiLeftPanel_EntitiesList();
     void renderImGuiLeftPanel_FieldsList();

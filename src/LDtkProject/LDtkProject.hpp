@@ -12,6 +12,12 @@
 #include <vector>
 
 struct LDtkProject {
+private:
+    struct DictionaryEntry {
+        const LDtkProjectDrawables::World* world;
+        const LDtkProjectDrawables::Level* level;
+        const LDtkProjectDrawables::Entity* entity;
+    };
 public:
     bool load(const char* path);
     static std::string fieldTypeEnumToString(const ldtk::FieldType& type);
@@ -31,4 +37,5 @@ public:
 
     std::unique_ptr<ldtk::Project> data = nullptr;
     std::unique_ptr<LDtkProjectDrawables> drawables = nullptr;
+    std::map<char, std::vector<DictionaryEntry>> dictionary;
 };

@@ -23,6 +23,21 @@ bool LDtkProject::load(const char* a_path) {
         drawables->worlds.emplace_back(world, project->getFilePath());
     selected_world = &drawables->worlds[0];
     selected_level = &selected_world->levels.at(0)[0];
+
+    for (const auto& world : drawables->worlds) {
+        for (const auto& [_, levels] : world.levels) {
+            for (const auto& level : levels) {
+                dictionary[level.data.name[0]].push_back({&world, &level, nullptr});
+
+                for (const auto& layer : level.layers) {
+                    for (const auto& entity : layer.entities) {
+                        dictionary[entity.data.getName()[0]].push_back({&world, &level, &entity});
+                    }
+                }
+            }
+        }
+    }
+
     return true;
 }
 

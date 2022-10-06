@@ -8,6 +8,7 @@
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include "imgui/imgui_internal.h"
+#include "imgui/imgui_custom.h"
 
 #include <LDtkLoader/World.hpp>
 
@@ -345,6 +346,10 @@ void App::renderImGuiLeftPanel() {
 
         ImGui::Pad(15, 18);
 
+        renderImGuiLeftPanel_SearchBar();
+
+        ImGui::Pad(15, 18);
+
         decorateImGuiExpandableScrollbar(frame_name, "Levels", &App::renderImGuiLeftPanel_LevelsList);
 
         ImGui::Pad(15, 18);
@@ -399,6 +404,74 @@ void App::renderImGuiLeftPanel_WorldsSelector() {
             ImGui::TextCenteredColored(colors::text_white, active_project.selected_world->data.getName().c_str());
         }
         ImGui::EndComboPreview();
+    }
+}
+
+void App::renderImGuiLeftPanel_SearchBar() {
+    auto& active_project = getActiveProject();
+    ImGui::AlignTextToFramePadding();
+    static std::string buffer;
+    static std::vector<std::tuple<const LDtkProjectDrawables::World*, const LDtkProjectDrawables::Level*, const LDtkProjectDrawables::Entity*>> results;
+    bool typed = false;
+    ImGui::SetNextItemWidth(PANEL_WIDTH * 0.75);
+    typed = ImGui::InputTextWithHint("##Search", "Search", &buffer);
+
+    if (typed) {
+        results.clear();
+        if (!buffer.empty()) {
+            for (const auto& [world, level, entity] : active_project.dictionary[buffer[0]]) {
+                auto name = entity ? entity->data.getName() : level->data.name;
+                if (name.substr(0, buffer.size()) == buffer) {
+                    results.emplace_back(world, level, entity);
+                }
+            }
+        }
+    }
+
+    if (!results.empty()) {
+        float height = ImGui::GetTextLineHeightWithSpacing() * (std::min((float)results.size()+0.2f, 6.75f));
+        ImGui::BeginListBox("SearchResults", {PANEL_WIDTH, height});
+
+        for (const auto& [world, level, entity] : results) {
+            auto name = entity ? entity->data.getName() : level->data.name;
+            std::string full_name;
+            glm::vec2 focus_pos;
+            if (!world->data.getName().empty())
+                full_name += world->data.getName() + " > ";
+            full_name += level->data.name;
+            if (entity) {
+                full_name += " > " + entity->data.getName();
+                focus_pos = entity->bounds.pos + entity->bounds.size.x / 2.f;
+            }
+            else {
+                focus_pos = level->bounds.pos + level->bounds.size / 2.f;
+            }
+            bool is_selected = entity ? active_project.selected_entity == entity : active_project.selected_level == level;
+            ImGui::Selectable(("##"+full_name).c_str(), is_selected, ImGuiSelectableFlags_AllowItemOverlap);
+            ImGui::SameLine();
+            if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+                getCamera().centerOn(focus_pos.x, focus_pos.y);
+                active_project.selected_world = world;
+                active_project.selected_level = level;
+                if (entity) {
+                    active_project.selected_entity = entity;
+                    active_project.render_entities = true;
+                }
+                active_project.selected_field = nullptr;
+                active_project.selected_field_values.clear();
+            }
+            if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip("%s", full_name.c_str());
+            }
+            if (ImGui::IsItemHovered() || is_selected) {
+                ImGui::TextCenteredColored(colors::text_black, name.c_str());
+            }
+            else {
+                ImGui::TextCenteredColored(colors::text_white, name.c_str());
+            }
+        }
+
+        ImGui::EndListBox();
     }
 }
 
