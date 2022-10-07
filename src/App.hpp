@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "AppImGui.hpp"
 #include "LDtkProject/LDtkProjectDrawables.hpp"
 #include "LDtkProject/LDtkProject.hpp"
 
@@ -21,10 +22,15 @@ public:
     bool loadLDtkFile(const char* path);
     void unloadLDtkFile(const char* path);
 
+    auto getWindow() -> sogl::Window&;
+
+    auto allProjects() -> std::map<std::string, LDtkProject>&;
+
     bool projectOpened();
 
     void refreshActiveProject();
     LDtkProject& getActiveProject();
+    void setActiveProject(LDtkProject& project);
 
     Camera2D& getCamera();
 
@@ -35,26 +41,10 @@ private:
 
     void renderActiveProject();
 
-    void initImGui();
-    void renderImGui();
-    void renderImGuiTabBar();
-    void renderImGuiLeftPanel();
-    void renderImGuiLeftPanel_WorldsSelector();
-    void renderImGuiLeftPanel_LevelsList();
-    void renderImGuiLeftPanel_EntitiesList();
-    void renderImGuiLeftPanel_FieldsList();
-    void renderImGuiLeftPanel_FieldValues();
-    void renderImGuiDepthSelector();
-    void renderImGuiInstructions();
-
-    void decorateImGuiExpandableScrollbar(const char* frame, const char* id, const std::function<void(App*)>& fn);
-
-    static constexpr auto imgui_window_flags = ImGuiWindowFlags_NoMove
-                                             | ImGuiWindowFlags_NoResize
-                                             | ImGuiWindowFlags_NoDecoration;
-
     sogl::Window m_window;
     sogl::Shader m_shader;
+
+    AppImGui m_imgui;
 
     std::map<std::string, LDtkProject> m_projects;
 
