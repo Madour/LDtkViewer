@@ -9,9 +9,6 @@
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_opengl3.h>
 
-constexpr auto PANEL_WIDTH = 200.f;
-constexpr auto BAR_HEIGHT = 30.f;
-
 AppImGui::AppImGui(App &app) : m_app(app) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -73,8 +70,8 @@ void AppImGui::render() {
 }
 
 void AppImGui::renderTabBar() {
-    ImGui::SetNextWindowSize({(float)m_app.getWindow().getSize().x-PANEL_WIDTH, BAR_HEIGHT});
-    ImGui::SetNextWindowPos({PANEL_WIDTH, 0});
+    ImGui::SetNextWindowSize({(float)m_app.getWindow().getSize().x-layout::left_panel_width, layout::tabs_bar_height});
+    ImGui::SetNextWindowPos({layout::left_panel_width, 0});
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0.f, 10.f});
     ImGui::Begin("TabBar", nullptr, imgui_window_flags | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
     ImGui::BeginTabBar("ProjectsTabs", ImGuiTabBarFlags_AutoSelectNewTabs);
@@ -129,7 +126,7 @@ void AppImGui::renderLeftPanel() {
     if (demo_open)
         ImGui::ShowDemoWindow(&demo_open);
 
-    ImGui::SetNextWindowSize({PANEL_WIDTH, (float)m_app.getWindow().getSize().y});
+    ImGui::SetNextWindowSize({layout::left_panel_width, (float)m_app.getWindow().getSize().y});
     ImGui::SetNextWindowPos({0, 0});
     ImGui::Begin(frame_name, nullptr, imgui_window_flags);
 
@@ -182,8 +179,8 @@ void AppImGui::renderLeftPanel_WorldsSelector() {
     ImGui::PushStyleColor(ImGuiCol_Text, colors::text_black);
     ImGui::PushStyleColor(ImGuiCol_Button, colors::selected);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {5, 5});
-    ImGui::SetNextItemWidth(PANEL_WIDTH * 0.75f);
-    ImGui::SetCursorPosX((PANEL_WIDTH - PANEL_WIDTH*0.75f) * 0.5f);
+    ImGui::SetNextItemWidth(layout::left_panel_width * 0.75f);
+    ImGui::SetCursorPosX((layout::left_panel_width - layout::left_panel_width*0.75f) * 0.5f);
     if (ImGui::BeginCombo("##WorldsSelect", nullptr, ImGuiComboFlags_CustomPreview)) {
         for (const auto& world : active_project.objects->worlds) {
             bool is_selected = active_project.selected_world == &world;
@@ -218,7 +215,7 @@ void AppImGui::renderLeftPanel_LevelsList() {
     auto& active_project = m_app.getActiveProject();
     ImGui::AlignTextToFramePadding();
     ImGui::Text("Levels");
-    ImGui::BeginListBox("Levels", {PANEL_WIDTH, ImGui::GetTextLineHeightWithSpacing() * 6.75f});
+    ImGui::BeginListBox("Levels", {layout::left_panel_width, ImGui::GetTextLineHeightWithSpacing() * 6.75f});
 
     for (const auto& level : active_project.selected_world->levels.at(active_project.depth)) {
         bool is_selected = active_project.selected_level == &level;
@@ -245,14 +242,14 @@ void AppImGui::renderLeftPanel_EntitiesList() {
 
     ImGui::AlignTextToFramePadding();
     ImGui::Text("Entities");
-    ImGui::SameLine(PANEL_WIDTH - 60);
+    ImGui::SameLine(layout::left_panel_width - 60);
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {0, 1});
     if (ImGui::Button(active_project.render_entities ? "Hide" : "Show", {50, ImGui::GetTextLineHeightWithSpacing()})) {
         active_project.render_entities = !active_project.render_entities;
     }
     ImGui::PopStyleVar();
     if (active_project.render_entities) {
-        ImGui::BeginListBox("Entities", {PANEL_WIDTH, ImGui::GetTextLineHeightWithSpacing() * 6.75f});
+        ImGui::BeginListBox("Entities", {layout::left_panel_width, ImGui::GetTextLineHeightWithSpacing() * 6.75f});
 
         if (active_project.selected_level != nullptr) {
             const auto& level = *active_project.selected_level;
@@ -291,7 +288,7 @@ void AppImGui::renderLeftPanel_FieldsList() {
     auto& active_project = m_app.getActiveProject();
     ImGui::AlignTextToFramePadding();
     ImGui::Text("Fields");
-    ImGui::BeginListBox("Fields", {PANEL_WIDTH, ImGui::GetTextLineHeightWithSpacing() * 6.75f});
+    ImGui::BeginListBox("Fields", {layout::left_panel_width, ImGui::GetTextLineHeightWithSpacing() * 6.75f});
 
     for (const auto& field : active_project.selected_entity->fields) {
         auto is_selected = active_project.selected_field == &field;
@@ -319,17 +316,17 @@ void AppImGui::renderLeftPanel_FieldValues() {
     ImGui::Text("%s", (LDtkProject::fieldTypeEnumToString(field.type) + " field").c_str());
     if (!LDtkProject::fieldTypeIsArray(field.type)) {
         auto height = ImGui::CalcTextSize(values.at(0).c_str()).y + ImGui::GetStyle().ItemSpacing.y;
-        ImGui::BeginChildFrame(ImGui::GetID("FieldValue"), ImVec2(PANEL_WIDTH, height + ImGui::GetStyle().FramePadding.y));
+        ImGui::BeginChildFrame(ImGui::GetID("FieldValue"), ImVec2(layout::left_panel_width, height + ImGui::GetStyle().FramePadding.y));
         ImGui::TextCentered(values.at(0).c_str());
         ImGui::EndChildFrame();
     }
     else {
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {3, ImGui::GetStyle().FramePadding.y});
-        ImGui::BeginChildFrame(ImGui::GetID("FieldValue"), ImVec2(PANEL_WIDTH, ImGui::GetTextLineHeightWithSpacing()*6.5f));
+        ImGui::BeginChildFrame(ImGui::GetID("FieldValue"), ImVec2(layout::left_panel_width, ImGui::GetTextLineHeightWithSpacing()*6.5f));
         int i = 0;
         for (const auto& val : values) {
             auto height = ImGui::CalcTextSize(val.c_str()).y + ImGui::GetStyle().ItemSpacing.y;
-            ImGui::BeginChildFrame(ImGui::GetID(std::to_string(i++).c_str()), ImVec2(PANEL_WIDTH-7, height + ImGui::GetStyle().FramePadding.y));
+            ImGui::BeginChildFrame(ImGui::GetID(std::to_string(i++).c_str()), ImVec2(layout::left_panel_width-7, height + ImGui::GetStyle().FramePadding.y));
             ImGui::TextCentered(val.c_str());
             ImGui::EndChildFrame();
         }
@@ -339,14 +336,17 @@ void AppImGui::renderLeftPanel_FieldValues() {
 }
 
 void AppImGui::renderDepthSelector() {
+    constexpr auto imgui_window_w = 45;
+
     auto& active_project = m_app.getActiveProject();
     auto& world = *active_project.selected_world;
+
     if (world.levels.size() > 1) {
         auto line_height = ImGui::GetTextLineHeightWithSpacing();
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {10.f, 10.f});
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.f);
         ImGui::SetNextWindowSize({45, 20.f + static_cast<float>(world.levels.size()) * line_height});
-        ImGui::SetNextWindowPos({PANEL_WIDTH + 15, BAR_HEIGHT + 15});
+        ImGui::SetNextWindowPos({layout::left_panel_width + 15, layout::tabs_bar_height + 15});
         ImGui::Begin("DepthSelector", nullptr, imgui_window_flags);
 
         for (auto it = world.levels.rbegin(); it != world.levels.rend(); it++) {
@@ -369,10 +369,14 @@ void AppImGui::renderDepthSelector() {
 }
 
 void AppImGui::renderInstructions() {
+    constexpr auto imgui_window_w = 400;
+    constexpr auto imgui_window_h = 200;
+    const auto window_posx = layout::left_panel_width + (m_app.getWindow().getSize().x - layout::left_panel_width - imgui_window_w) / 2;
+    const auto window_posy = layout::tabs_bar_height + (m_app.getWindow().getSize().y - layout::tabs_bar_height - imgui_window_h) / 2;
+
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.f);
-    ImGui::SetNextWindowSize({400, 200});
-    ImGui::SetNextWindowPos({PANEL_WIDTH + (static_cast<float>(m_app.getWindow().getSize().x) - PANEL_WIDTH - 400) / 2,
-                             BAR_HEIGHT + (static_cast<float>(m_app.getWindow().getSize().y) - BAR_HEIGHT - 200) / 2});
+    ImGui::SetNextWindowSize({imgui_window_w, imgui_window_h});
+    ImGui::SetNextWindowPos({static_cast<float>(window_posx), static_cast<float>(window_posy)});
     ImGui::Begin("Instructions", nullptr, imgui_window_flags);
 #if defined(EMSCRIPTEN)
     ImGui::Pad(0, 80);
