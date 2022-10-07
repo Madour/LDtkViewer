@@ -1,6 +1,7 @@
 // Created by Modar Nasser on 12/03/2022.
 
 #include "App.hpp"
+#include "Config.hpp"
 
 #include "LDtkProject/ldtk2glm.hpp"
 
@@ -8,14 +9,12 @@
 
 #include <filesystem>
 
-constexpr float PANEL_WIDTH = 200.f;
-constexpr float BAR_HEIGHT = 30.f;
-
-constexpr int WINDOW_WIDTH = 1366;
-constexpr int WINDOW_HEIGHT = 768;
+constexpr auto WINDOW_WIDTH = 1366;
+constexpr auto WINDOW_HEIGHT = 768;
+constexpr auto WINDOW_TITLE = "LDtk Viewer";
 
 App::App() :
-m_window(WINDOW_WIDTH, WINDOW_HEIGHT, "LDtk Viewer"),
+m_window(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE),
 m_imgui(*this) {
     m_shader.load(vert_shader, frag_shader);
 }
@@ -189,7 +188,7 @@ void App::processEvent(sogl::Event& event) {
 }
 
 void App::renderActiveProject() {
-    static const glm::vec2 OFFSET = {PANEL_WIDTH, BAR_HEIGHT};
+    static const glm::vec2 OFFSET = {layout::left_panel_width, layout::tabs_bar_height};
 
     const auto& active_project = getActiveProject();
 

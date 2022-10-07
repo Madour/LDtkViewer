@@ -26,3 +26,19 @@ namespace colors {
     constexpr auto scrollbar_hovered = hovered;
     constexpr auto scrollbar_active = active;
 }
+
+namespace window {
+    constexpr auto docked_rounding = 0.f;
+    constexpr auto docked_padding = ImVec2{2.f, 2.f};
+
+    constexpr auto pinned_rounding = 10.f;
+    constexpr auto pinned_padding = ImVec2{10.f, 10.f};
+
+    constexpr auto scrollbar_width = 11.f;
+    constexpr auto scrollbar_focused_width = 15.f;
+}
+
+namespace layout {
+    constexpr auto left_panel_width = 200;
+    constexpr auto tabs_bar_height = 30;
+}
