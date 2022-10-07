@@ -185,7 +185,7 @@ void AppImGui::renderLeftPanel_WorldsSelector() {
     ImGui::SetNextItemWidth(PANEL_WIDTH * 0.75f);
     ImGui::SetCursorPosX((PANEL_WIDTH - PANEL_WIDTH*0.75f) * 0.5f);
     if (ImGui::BeginCombo("##WorldsSelect", nullptr, ImGuiComboFlags_CustomPreview)) {
-        for (const auto& world : active_project.drawables->worlds) {
+        for (const auto& world : active_project.objects->worlds) {
             bool is_selected = active_project.selected_world == &world;
             if (ImGui::Selectable(("##"+world.data.getName()).c_str(), is_selected)) {
                 active_project.selected_world = &world;

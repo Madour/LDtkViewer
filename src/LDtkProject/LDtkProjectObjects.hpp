@@ -18,7 +18,7 @@ struct Rect {
     glm::vec2 size;
 };
 
-class LDtkProjectDrawables {
+class LDtkProjectObjects {
 public:
     struct Field {
         explicit Field(const ldtk::FieldDef& field);

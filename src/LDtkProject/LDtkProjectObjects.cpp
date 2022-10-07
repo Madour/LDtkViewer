@@ -1,6 +1,6 @@
 // Created by Modar Nasser on 13/03/2022.
 
-#include "LDtkProjectDrawables.hpp"
+#include "LDtkProjectObjects.hpp"
 #include "TextureManager.hpp"
 
 #include "ldtk2glm.hpp"
@@ -8,7 +8,7 @@
 static glm::vec2 level_offset = {0, 0};
 static glm::vec2 level_pos = {0, 0};
 
-LDtkProjectDrawables::World::World(const ldtk::World& world, const ldtk::FilePath& filepath) :
+LDtkProjectObjects::World::World(const ldtk::World& world, const ldtk::FilePath& filepath) :
 data(world) {
     short_name = filepath.filename().substr(0, filepath.filename().find('.'));
     level_offset = {0, 0};
@@ -23,7 +23,7 @@ data(world) {
     }
 }
 
-LDtkProjectDrawables::Level::Level(const ldtk::Level& level, const ldtk::FilePath& filepath) :
+LDtkProjectObjects::Level::Level(const ldtk::Level& level, const ldtk::FilePath& filepath) :
 data(level) {
     bounds.pos.x = level.position.x + level_offset.x;
     bounds.pos.y = level.position.y + level_offset.y;
@@ -36,7 +36,7 @@ data(level) {
     }
 }
 
-LDtkProjectDrawables::Layer::Layer(const ldtk::Layer& layer, const ldtk::FilePath& filepath) :
+LDtkProjectObjects::Layer::Layer(const ldtk::Layer& layer, const ldtk::FilePath& filepath) :
 data(layer) {
     if (!layer.allTiles().empty()) {
         auto proj_dir = filepath.directory();
@@ -81,7 +81,7 @@ data(layer) {
     }
 }
 
-void LDtkProjectDrawables::Layer::render(sogl::Shader& shader, bool render_entities) const {
+void LDtkProjectObjects::Layer::render(sogl::Shader& shader, bool render_entities) const {
     if (m_texture != nullptr) {
         shader.setUniform("texture_size", glm::vec2(m_texture->getSize()));
         m_texture->bind();
@@ -97,7 +97,7 @@ void LDtkProjectDrawables::Layer::render(sogl::Shader& shader, bool render_entit
     }
 }
 
-LDtkProjectDrawables::Entity::Entity(const ldtk::Entity& entity) :
+LDtkProjectObjects::Entity::Entity(const ldtk::Entity& entity) :
 data(entity) {
     fields.reserve(entity.allFields().size());
     for (const auto& field : entity.allFields()) {
@@ -107,5 +107,5 @@ data(entity) {
     bounds.size = ldtk2glm(entity.getSize());
 }
 
-LDtkProjectDrawables::Field::Field(const ldtk::FieldDef& field) : data(field)
+LDtkProjectObjects::Field::Field(const ldtk::FieldDef& field) : data(field)
 {}

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "AppImGui.hpp"
-#include "LDtkProject/LDtkProjectDrawables.hpp"
+#include "LDtkProject/LDtkProjectObjects.hpp"
 #include "LDtkProject/LDtkProject.hpp"
 
 #include "imgui/imgui.h"
