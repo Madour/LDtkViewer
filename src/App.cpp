@@ -317,7 +317,6 @@ void App::renderImGuiTabBar() {
 
 void App::renderImGuiLeftPanel() {
     static bool demo_open = false;
-    static bool render_entities = false;
     const auto* frame_name = "LeftPanel";
     if (demo_open)
         ImGui::ShowDemoWindow(&demo_open);
