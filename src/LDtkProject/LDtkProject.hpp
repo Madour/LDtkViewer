@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Camera2D.hpp"
-#include "LDtkProjectDrawables.hpp"
+#include "LDtkProjectObjects.hpp"
 
 #include <LDtkLoader/Project.hpp>
 
@@ -23,12 +23,12 @@ public:
     std::string path;
     bool render_entities = false;
 
-    const LDtkProjectDrawables::World* selected_world = nullptr;
-    const LDtkProjectDrawables::Level* selected_level = nullptr;
-    const LDtkProjectDrawables::Entity* selected_entity = nullptr;
-    const LDtkProjectDrawables::Field* selected_field = nullptr;
+    const LDtkProjectObjects::World* selected_world = nullptr;
+    const LDtkProjectObjects::Level* selected_level = nullptr;
+    const LDtkProjectObjects::Entity* selected_entity = nullptr;
+    const LDtkProjectObjects::Field* selected_field = nullptr;
     std::vector<std::string> selected_field_values;
 
     std::unique_ptr<ldtk::Project> data = nullptr;
-    std::unique_ptr<LDtkProjectDrawables> drawables = nullptr;
+    std::unique_ptr<LDtkProjectObjects> objects = nullptr;
 };

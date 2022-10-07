@@ -17,11 +17,11 @@ bool LDtkProject::load(const char* a_path) {
     data = std::unique_ptr<ldtk::Project>(project);
     path = std::string(data->getFilePath().c_str());
 
-    drawables = std::make_unique<LDtkProjectDrawables>();
-    drawables->name = data->getFilePath().filename();
+    objects = std::make_unique<LDtkProjectObjects>();
+    objects->name = data->getFilePath().filename();
     for (const auto& world : data->allWorlds())
-        drawables->worlds.emplace_back(world, project->getFilePath());
-    selected_world = &drawables->worlds[0];
+        objects->worlds.emplace_back(world, project->getFilePath());
+    selected_world = &objects->worlds[0];
     selected_level = &selected_world->levels.at(0)[0];
     return true;
 }
