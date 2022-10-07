@@ -266,8 +266,12 @@ void App::renderImGui() {
     ImGui::NewFrame();
     renderImGuiTabBar();
     renderImGuiLeftPanel();
-    renderImGuiDepthSelector();
-    renderImGuiInstructions();
+    if (projectOpened()) {
+        renderImGuiDepthSelector();
+    }
+    else {
+        renderImGuiInstructions();
+    }
     ImGui::Render();
 
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -322,10 +326,6 @@ void App::renderImGuiLeftPanel() {
     ImGui::SetNextWindowPos({0, 0});
     ImGui::Begin(frame_name, nullptr, imgui_window_flags);
 
-    // demo window
-    // ImGui::Checkbox("Demo Window", &demo_open);
-    // ImGui::TextCentered(ImGui::HoveredItemLabel().c_str());
-
     // Software Title + version
     ImGui::Pad(0, 3.5f);
     ImGui::TextCentered("LDtk Viewer v0.1");
@@ -334,6 +334,11 @@ void App::renderImGuiLeftPanel() {
     ImGui::Separator();
     ImGui::PopStyleColor();
     ImGui::Separator();
+
+    // demo window
+    // ImGui::Pad(15, 18);
+    // ImGui::Checkbox("Demo Window", &demo_open);
+    // ImGui::TextCentered(ImGui::HoveredItemLabel().c_str());
 
     // Current world levels
     if (projectOpened()) {
@@ -540,54 +545,50 @@ void App::decorateImGuiExpandableScrollbar(const char* frame, const char* id, co
 }
 
 void App::renderImGuiDepthSelector() {
-    if (projectOpened()) {
-        auto& active_project = getActiveProject();
-        auto& world = *active_project.selected_world;
-        if (world.levels.size() > 1) {
-            auto line_height = ImGui::GetTextLineHeightWithSpacing();
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {10.f, 10.f});
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.f);
-            ImGui::SetNextWindowSize({45, 20.f + static_cast<float>(world.levels.size()) * line_height});
-            ImGui::SetNextWindowPos({PANEL_WIDTH + 15, BAR_HEIGHT + 15});
-            ImGui::Begin("DepthSelector", nullptr, imgui_window_flags);
+    auto& active_project = getActiveProject();
+    auto& world = *active_project.selected_world;
+    if (world.levels.size() > 1) {
+        auto line_height = ImGui::GetTextLineHeightWithSpacing();
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {10.f, 10.f});
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.f);
+        ImGui::SetNextWindowSize({45, 20.f + static_cast<float>(world.levels.size()) * line_height});
+        ImGui::SetNextWindowPos({PANEL_WIDTH + 15, BAR_HEIGHT + 15});
+        ImGui::Begin("DepthSelector", nullptr, imgui_window_flags);
 
-            for (auto it = world.levels.rbegin(); it != world.levels.rend(); it++) {
-                const auto& [depth, _] = *it;
-                ImGui::Selectable(("##"+std::to_string(depth)).c_str(), active_project.depth == depth);
-                if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
-                    active_project.depth = depth;
-                    active_project.selected_level = &world.levels.at(depth)[0];
-                }
-                ImGui::SameLine();
-                if (active_project.depth == depth || ImGui::IsItemHovered())
-                    ImGui::TextCenteredColored(colors::text_black, std::to_string(depth).c_str());
-                else
-                    ImGui::TextCenteredColored(colors::text_white, std::to_string(depth).c_str());
+        for (auto it = world.levels.rbegin(); it != world.levels.rend(); it++) {
+            const auto& [depth, _] = *it;
+            ImGui::Selectable(("##"+std::to_string(depth)).c_str(), active_project.depth == depth);
+            if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+                active_project.depth = depth;
+                active_project.selected_level = &world.levels.at(depth)[0];
             }
-            ImGui::End();
-            ImGui::PopStyleVar();
-            ImGui::PopStyleVar();
+            ImGui::SameLine();
+            if (active_project.depth == depth || ImGui::IsItemHovered())
+                ImGui::TextCenteredColored(colors::text_black, std::to_string(depth).c_str());
+            else
+                ImGui::TextCenteredColored(colors::text_white, std::to_string(depth).c_str());
         }
+        ImGui::End();
+        ImGui::PopStyleVar();
+        ImGui::PopStyleVar();
     }
 }
 
 void App::renderImGuiInstructions() {
-    if (!projectOpened()) {
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.f);
-        ImGui::SetNextWindowSize({400, 200});
-        ImGui::SetNextWindowPos({PANEL_WIDTH + (static_cast<float>(m_window.getSize().x) - PANEL_WIDTH - 400) / 2,
-                                 BAR_HEIGHT + (static_cast<float>(m_window.getSize().y) - BAR_HEIGHT - 200) / 2});
-        ImGui::Begin("Instructions", nullptr, imgui_window_flags);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.f);
+    ImGui::SetNextWindowSize({400, 200});
+    ImGui::SetNextWindowPos({PANEL_WIDTH + (static_cast<float>(m_window.getSize().x) - PANEL_WIDTH - 400) / 2,
+                             BAR_HEIGHT + (static_cast<float>(m_window.getSize().y) - BAR_HEIGHT - 200) / 2});
+    ImGui::Begin("Instructions", nullptr, imgui_window_flags);
 #if defined(EMSCRIPTEN)
-        ImGui::Pad(0, 80);
-        ImGui::TextCentered("Drag and drop your LDtk projects");
-        ImGui::TextCentered("and all the needed assets here");
-        ImGui::TextCentered("(you can drop an entire folder)");
+    ImGui::Pad(0, 80);
+    ImGui::TextCentered("Drag and drop your LDtk projects");
+    ImGui::TextCentered("and all the needed assets here");
+    ImGui::TextCentered("(you can drop an entire folder)");
 #else
-        ImGui::Pad(0, 90);
-        ImGui::TextCentered("Drag and drop your LDtk projects here");
+    ImGui::Pad(0, 90);
+    ImGui::TextCentered("Drag and drop your LDtk projects here");
 #endif
-        ImGui::End();
-        ImGui::PopStyleVar();
-    }
+    ImGui::End();
+    ImGui::PopStyleVar();
 }
