@@ -28,6 +28,8 @@ namespace colors {
 }
 
 namespace window {
+    constexpr auto border_size = 0.f;
+
     constexpr auto docked_rounding = 0.f;
     constexpr auto docked_padding = ImVec2{2.f, 2.f};
 
@@ -39,6 +41,12 @@ namespace window {
 }
 
 namespace layout {
+    constexpr auto left_panel_position = ImVec2{0.f, 0.f};
     constexpr auto left_panel_width = 200;
+
+    constexpr auto tabs_bar_position = ImVec2{left_panel_width, 0.f};
     constexpr auto tabs_bar_height = 30;
+
+    constexpr auto depth_selector_position = ImVec2{left_panel_width + 15, tabs_bar_height + 15};
+    constexpr auto depth_selector_width = 45.f;
 }
