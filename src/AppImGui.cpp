@@ -17,12 +17,13 @@ AppImGui::AppImGui(App &app) : m_app(app) {
 
     auto& style = ImGui::GetStyle();
 
-    style.WindowBorderSize = 0.f;
-    style.WindowPadding = {0.f, 0.f};
+    style.WindowBorderSize = window::border_size;
+    style.WindowPadding = window::docked_padding;
+    style.WindowRounding = window::docked_rounding;
     style.FrameRounding = 5.f;
     style.PopupBorderSize = 1;
     style.SelectableTextAlign = {0.5f, 0.5f};
-    style.ScrollbarSize = 11.f;
+    style.ScrollbarSize = window::scrollbar_width;
 
     style.Colors[ImGuiCol_Text] = ImColor(colors::text_white);
 
@@ -70,8 +71,9 @@ void AppImGui::render() {
 }
 
 void AppImGui::renderTabBar() {
-    ImGui::SetNextWindowSize({(float)m_app.getWindow().getSize().x-layout::left_panel_width, layout::tabs_bar_height});
-    ImGui::SetNextWindowPos({layout::left_panel_width, 0});
+    ImGui::SetNextWindowSize({static_cast<float>(m_app.getWindow().getSize().x) - layout::left_panel_width,
+                              layout::tabs_bar_height});
+    ImGui::SetNextWindowPos(layout::tabs_bar_position);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0.f, 10.f});
     ImGui::Begin("TabBar", nullptr, imgui_window_flags | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
     ImGui::BeginTabBar("ProjectsTabs", ImGuiTabBarFlags_AutoSelectNewTabs);
@@ -112,7 +114,7 @@ void AppImGui::decorateImGuiExpandableScrollbar(const char* frame, const char* i
     bool scrollbar_hovered = false;
     if (std::string(ImGui::HoveredItemLabel()) == frame + ("/" + ImGui::IDtoString(ImGui::GetID(id))) + "/#SCROLLY") {
         scrollbar_hovered = true;
-        ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 15.f);
+        ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, window::scrollbar_focused_width);
     }
     fn(this);
     if (scrollbar_hovered) {
@@ -126,8 +128,8 @@ void AppImGui::renderLeftPanel() {
     if (demo_open)
         ImGui::ShowDemoWindow(&demo_open);
 
-    ImGui::SetNextWindowSize({layout::left_panel_width, (float)m_app.getWindow().getSize().y});
-    ImGui::SetNextWindowPos({0, 0});
+    ImGui::SetNextWindowSize({layout::left_panel_width, static_cast<float>(m_app.getWindow().getSize().y)});
+    ImGui::SetNextWindowPos(layout::left_panel_position);
     ImGui::Begin(frame_name, nullptr, imgui_window_flags);
 
     // Software Title + version
@@ -336,17 +338,16 @@ void AppImGui::renderLeftPanel_FieldValues() {
 }
 
 void AppImGui::renderDepthSelector() {
-    constexpr auto imgui_window_w = 45;
-
     auto& active_project = m_app.getActiveProject();
     auto& world = *active_project.selected_world;
 
     if (world.levels.size() > 1) {
         auto line_height = ImGui::GetTextLineHeightWithSpacing();
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {10.f, 10.f});
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.f);
-        ImGui::SetNextWindowSize({45, 20.f + static_cast<float>(world.levels.size()) * line_height});
-        ImGui::SetNextWindowPos({layout::left_panel_width + 15, layout::tabs_bar_height + 15});
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, window::pinned_padding);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, window::pinned_rounding);
+        ImGui::SetNextWindowSize({layout::depth_selector_width,
+                                  window::pinned_padding.y * 1.7f + static_cast<float>(world.levels.size()) * line_height});
+        ImGui::SetNextWindowPos(layout::depth_selector_position);
         ImGui::Begin("DepthSelector", nullptr, imgui_window_flags);
 
         for (auto it = world.levels.rbegin(); it != world.levels.rend(); it++) {
